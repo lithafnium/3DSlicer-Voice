@@ -4,6 +4,7 @@ import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 import logging
 
+import speech_recognition as sr
 #
 # VoiceRecognition
 #
@@ -18,15 +19,13 @@ class VoiceRecognition(ScriptedLoadableModule):
     self.parent.title = "VoiceRecognition" # TODO make this more human readable by adding spaces
     self.parent.categories = ["Examples"]
     self.parent.dependencies = []
-    self.parent.contributors = ["John Doe (AnyWare Corp.)"] # replace with "Firstname Lastname (Organization)"
+    self.parent.contributors = ["Steve Li (BWH)"] # replace with "Firstname Lastname (Organization)"
     self.parent.helpText = """
-This is an example of scripted loadable module bundled in an extension.
-It performs a simple thresholding on the input volume and optionally captures a screenshot.
+Voice control software for basic commands
 """
     self.parent.helpText += self.getDefaultModuleDocumentationLink()
     self.parent.acknowledgementText = """
-This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc.
-and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
+Developed with the aid of Dr. Junichi Tokuda 
 """ # replace with organization, grant and thanks.
 
 #
@@ -56,64 +55,68 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     # input volume selector
     #
-    self.inputSelector = slicer.qMRMLNodeComboBox()
-    self.inputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-    self.inputSelector.selectNodeUponCreation = True
-    self.inputSelector.addEnabled = False
-    self.inputSelector.removeEnabled = False
-    self.inputSelector.noneEnabled = False
-    self.inputSelector.showHidden = False
-    self.inputSelector.showChildNodeTypes = False
-    self.inputSelector.setMRMLScene( slicer.mrmlScene )
-    self.inputSelector.setToolTip( "Pick the input to the algorithm." )
-    parametersFormLayout.addRow("Input Volume: ", self.inputSelector)
+    # self.inputSelector = slicer.qMRMLNodeComboBox()
+    # self.inputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    # self.inputSelector.selectNodeUponCreation = True
+    # self.inputSelector.addEnabled = False
+    # self.inputSelector.removeEnabled = False
+    # self.inputSelector.noneEnabled = False
+    # self.inputSelector.showHidden = False
+    # self.inputSelector.showChildNodeTypes = False
+    # self.inputSelector.setMRMLScene( slicer.mrmlScene )
+    # self.inputSelector.setToolTip( "Pick the input to the algorithm." )
+    # parametersFormLayout.addRow("Input Volume: ", self.inputSelector)
 
     #
     # output volume selector
     #
-    self.outputSelector = slicer.qMRMLNodeComboBox()
-    self.outputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-    self.outputSelector.selectNodeUponCreation = True
-    self.outputSelector.addEnabled = True
-    self.outputSelector.removeEnabled = True
-    self.outputSelector.noneEnabled = True
-    self.outputSelector.showHidden = False
-    self.outputSelector.showChildNodeTypes = False
-    self.outputSelector.setMRMLScene( slicer.mrmlScene )
-    self.outputSelector.setToolTip( "Pick the output to the algorithm." )
-    parametersFormLayout.addRow("Output Volume: ", self.outputSelector)
+    # self.outputSelector = slicer.qMRMLNodeComboBox()
+    # self.outputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    # self.outputSelector.selectNodeUponCreation = True
+    # self.outputSelector.addEnabled = True
+    # self.outputSelector.removeEnabled = True
+    # self.outputSelector.noneEnabled = True
+    # self.outputSelector.showHidden = False
+    # self.outputSelector.showChildNodeTypes = False
+    # self.outputSelector.setMRMLScene( slicer.mrmlScene )
+    # self.outputSelector.setToolTip( "Pick the output to the algorithm." )
+    # parametersFormLayout.addRow("Output Volume: ", self.outputSelector)
 
     #
     # threshold value
     #
-    self.imageThresholdSliderWidget = ctk.ctkSliderWidget()
-    self.imageThresholdSliderWidget.singleStep = 0.1
-    self.imageThresholdSliderWidget.minimum = -100
-    self.imageThresholdSliderWidget.maximum = 100
-    self.imageThresholdSliderWidget.value = 0.5
-    self.imageThresholdSliderWidget.setToolTip("Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.")
-    parametersFormLayout.addRow("Image threshold", self.imageThresholdSliderWidget)
+    # self.imageThresholdSliderWidget = ctk.ctkSliderWidget()
+    # self.imageThresholdSliderWidget.singleStep = 0.1
+    # self.imageThresholdSliderWidget.minimum = -100
+    # self.imageThresholdSliderWidget.maximum = 100
+    # self.imageThresholdSliderWidget.value = 0.5
+    # self.imageThresholdSliderWidget.setToolTip("Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.")
+    # parametersFormLayout.addRow("Image threshold", self.imageThresholdSliderWidget)
 
     #
     # check box to trigger taking screen shots for later use in tutorials
     #
-    self.enableScreenshotsFlagCheckBox = qt.QCheckBox()
-    self.enableScreenshotsFlagCheckBox.checked = 0
-    self.enableScreenshotsFlagCheckBox.setToolTip("If checked, take screen shots for tutorials. Use Save Data to write them to disk.")
-    parametersFormLayout.addRow("Enable Screenshots", self.enableScreenshotsFlagCheckBox)
+    # self.enableScreenshotsFlagCheckBox = qt.QCheckBox()
+    # self.enableScreenshotsFlagCheckBox.checked = 0
+    # self.enableScreenshotsFlagCheckBox.setToolTip("If checked, take screen shots for tutorials. Use Save Data to write them to disk.")
+    # parametersFormLayout.addRow("Enable Screenshots", self.enableScreenshotsFlagCheckBox)
 
     #
     # Apply Button
     #
-    self.applyButton = qt.QPushButton("Apply")
-    self.applyButton.toolTip = "Run the algorithm."
-    self.applyButton.enabled = False
+    self.applyButton = qt.QPushButton("Begin Listneing")
+    self.applyButton.toolTip = "Listens for voice."
+    self.applyButton.enabled = True
     parametersFormLayout.addRow(self.applyButton)
+
+    self.textBox = qt.QLabel("testing")
+    self.textBox.toolTip = "User input"
+    parametersFormLayout.addRow(self.textBox)
 
     # connections
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
-    self.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-    self.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+    # self.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+    #self.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
 
     # Add vertical spacer
     self.layout.addStretch(1)
@@ -125,13 +128,16 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     pass
 
   def onSelect(self):
-    self.applyButton.enabled = self.inputSelector.currentNode() and self.outputSelector.currentNode()
+    print(5)
+    #self.applyButton.enabled = self.inputSelector.currentNode() and self.outputSelector.currentNode()
 
   def onApplyButton(self):
     logic = VoiceRecognitionLogic()
-    enableScreenshotsFlag = self.enableScreenshotsFlagCheckBox.checked
-    imageThreshold = self.imageThresholdSliderWidget.value
-    logic.run(self.inputSelector.currentNode(), self.outputSelector.currentNode(), imageThreshold, enableScreenshotsFlag)
+    logic.initMicrophone()
+
+    # enableScreenshotsFlag = self.enableScreenshotsFlagCheckBox.checked
+    # imageThreshold = self.imageThresholdSliderWidget.value
+    #logic.run(self.inputSelector.currentNode(), self.outputSelector.currentNode(), imageThreshold, enableScreenshotsFlag)
 
 #
 # VoiceRecognitionLogic
@@ -146,6 +152,28 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   Uses ScriptedLoadableModuleLogic base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
+
+
+  def interpreter(recognizer, microphone):
+    # maybe move to testing 
+    if not isinstance(recognizer, sr.Recognizer):
+      raise TypeError("recognizer must be Recognizer instance")
+
+    if not isinstance(micorphone, sr.Micorphone):
+      raise TypeError("microphone must be Mcirophone instance")
+
+    with micorphone as source:
+      recognizer.adjust_for_ambient_noise(source)
+      audio = recognizer.listen(source)
+
+
+
+  def initMicrophone(self):
+    recognizer = sr.Recognizer()
+    microphone = sr.Microphone()
+
+    self.interpreter(recognizer, microphone)
+
 
   def hasImageData(self,volumeNode):
     """This is an example logic method that
