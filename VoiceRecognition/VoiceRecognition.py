@@ -38,6 +38,8 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   """
 
   def setup(self):
+    self.recognizer = sr.Recognizer()
+    self.microphone = sr.Microphone()
     ScriptedLoadableModuleWidget.setup(self)
 
     # Instantiate and connect widgets ...
@@ -109,8 +111,13 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.applyButton.enabled = True
     parametersFormLayout.addRow(self.applyButton)
 
-    self.textBox = qt.QLabel("testing")
+    self.displayLabel = qt.QLabel("Press to begin listening:")
+    self.displayLabel.setTextFormat(0) # plain text
+    parametersFormLayout.addRow(self.displayLabel)
+
+    self.textBox = qt.QLabel(" ")
     self.textBox.toolTip = "User input"
+    self.textBox.setTextFormat(0) #plain text 
     parametersFormLayout.addRow(self.textBox)
 
     # connections
@@ -132,13 +139,22 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #self.applyButton.enabled = self.inputSelector.currentNode() and self.outputSelector.currentNode()
 
   def onApplyButton(self):
-    logic = VoiceRecognitionLogic()
-    logic.initMicrophone()
+    #print("testing")
+    self.displayLabel.setText("Listening for speech....")
+    self.startLogic()
+    #logic = VoiceRecognitionLogic()
+    #self.textBox.setText(logic.initMicrophone())
+    #print(logic.initMicrophone())
+
+    #self.displayLabel.setText("Press to begin listening:")
 
     # enableScreenshotsFlag = self.enableScreenshotsFlagCheckBox.checked
     # imageThreshold = self.imageThresholdSliderWidget.value
     #logic.run(self.inputSelector.currentNode(), self.outputSelector.currentNode(), imageThreshold, enableScreenshotsFlag)
 
+  def startLogic(self):
+    logic = VoiceRecognitionLogic()
+    self.textBox.setText(logic.interpreter(self.recognizer, self.microphone))
 #
 # VoiceRecognitionLogic
 #
@@ -154,25 +170,32 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   """
 
 
-  def interpreter(recognizer, microphone):
+  def interpreter(self, recognizer, microphone):
     # maybe move to testing 
     if not isinstance(recognizer, sr.Recognizer):
       raise TypeError("recognizer must be Recognizer instance")
 
-    if not isinstance(micorphone, sr.Micorphone):
+    if not isinstance(microphone, sr.Microphone):
       raise TypeError("microphone must be Mcirophone instance")
 
-    with micorphone as source:
+    with microphone as source:
       recognizer.adjust_for_ambient_noise(source)
       audio = recognizer.listen(source)
+    
+    try: 
+      return recognizer.recognize_google(audio)
+
+    except sr.RequestError: 
+      return "There was an issue in handling the request, please try again"
+    except sr.UnknownValueError:
+      return "Unable to Recognize speech"
+    #return recognizer.recognize_google(audio)
 
 
 
-  def initMicrophone(self):
-    recognizer = sr.Recognizer()
-    microphone = sr.Microphone()
 
-    self.interpreter(recognizer, microphone)
+  #def initMicrophone(self):
+    
 
 
   def hasImageData(self,volumeNode):
