@@ -58,17 +58,16 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     # microphone selector 
     self.microphoneSelector = qt.QComboBox()
     self.microphoneList = sr.Microphone.list_microphone_names()
+    self.microphoneSelector.addItem("Default")
     self.microphoneSelector.addItems(self.microphoneList)
     self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
     parametersFormLayout.addRow("Choose microphone: ", self.microphoneSelector)
 
-    # gets the index of the selected microphone
-    index = self.microphoneSelector.currentIndex
-    
-    # initializes recognizer and microphone
     self.recognizer = sr.Recognizer()
-    print("index: ", index)
-    self.microphone = sr.Microphone(device_index = index)
+    self.microphone = sr.Microphone()
+
+
+    
     #self.microphone = sr.Microphone()
 
 
@@ -145,9 +144,21 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   def microphone_changed(self):
     print(self.microphoneSelector.currentIndex)
 
+
+    # gets the index of the selected microphone
+    index = self.microphoneSelector.currentIndex
+    print("index: ", index)
+
+    
+    if(index == 0): 
+      self.microphone = sr.Microphone()    
+    else: 
+      self.microphone = sr.Microphone(device_index = index - 1)
+
   def onApplyButton(self):
     #print("testing")
-    self.displayLabel.setText("Listening for speech....")
+    #elf.displayLabel.setText("Listening for speech....")
+    slicer.util.delayDisplay("Listening for speech....")
     self.startLogic()
     #logic = VoiceRecognitionLogic()
     #self.textBox.setText(logic.initMicrophone())
