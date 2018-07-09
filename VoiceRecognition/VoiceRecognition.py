@@ -38,8 +38,9 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   """
 
   def setup(self):
-    self.recognizer = sr.Recognizer()
-    self.microphone = sr.Microphone()
+    print(5)
+    # self.recognizer = sr.Recognizer()
+    # self.microphone = sr.Microphone()
     ScriptedLoadableModuleWidget.setup(self)
 
     # Instantiate and connect widgets ...
@@ -54,36 +55,35 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     # Layout within the dummy collapsible button
     parametersFormLayout = qt.QFormLayout(parametersCollapsibleButton)
 
-    #
-    # input volume selector
-    #
-    # self.inputSelector = slicer.qMRMLNodeComboBox()
-    # self.inputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-    # self.inputSelector.selectNodeUponCreation = True
-    # self.inputSelector.addEnabled = False
-    # self.inputSelector.removeEnabled = False
-    # self.inputSelector.noneEnabled = False
-    # self.inputSelector.showHidden = False
-    # self.inputSelector.showChildNodeTypes = False
-    # self.inputSelector.setMRMLScene( slicer.mrmlScene )
-    # self.inputSelector.setToolTip( "Pick the input to the algorithm." )
-    # parametersFormLayout.addRow("Input Volume: ", self.inputSelector)
+    # microphone selector 
+    self.microphoneSelector = qt.QComboBox()
+    self.microphoneList = sr.Microphone.list_microphone_names()
+    self.microphoneSelector.addItems(self.microphoneList)
+    self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
+    parametersFormLayout.addRow("Choose microphone: ", self.microphoneSelector)
 
-    #
-    # output volume selector
-    #
-    # self.outputSelector = slicer.qMRMLNodeComboBox()
-    # self.outputSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-    # self.outputSelector.selectNodeUponCreation = True
-    # self.outputSelector.addEnabled = True
-    # self.outputSelector.removeEnabled = True
-    # self.outputSelector.noneEnabled = True
-    # self.outputSelector.showHidden = False
-    # self.outputSelector.showChildNodeTypes = False
-    # self.outputSelector.setMRMLScene( slicer.mrmlScene )
-    # self.outputSelector.setToolTip( "Pick the output to the algorithm." )
-    # parametersFormLayout.addRow("Output Volume: ", self.outputSelector)
+    # gets the index of the selected microphone
+    index = self.microphoneSelector.currentIndex
+    
+    # initializes recognizer and microphone
+    self.recognizer = sr.Recognizer()
+    print("index: ", index)
+    self.microphone = sr.Microphone(device_index = index)
+    #self.microphone = sr.Microphone()
 
+
+    # Sound energy level threshold value
+    self.energyLevelThreshold = ctk.ctkSliderWidget()
+    self.energyLevelThreshold.singleStep = 1 
+    self.energyLevelThreshold.minimum = 0
+    self.energyLevelThreshold.maximum = 5000
+    self.energyLevelThreshold.value = 300
+    self.energyLevelThreshold.valueChanged.connect(self.threshold_changed)
+    self.energyLevelThreshold.tracking = False
+    self.energyLevelThreshold.setToolTip("Sets the threshold value for sounds. Value below this threshold is considered silence. Silent rooms are from 0-100, values for speaking 150-3500. Adjust if necessary")
+    
+
+    parametersFormLayout.addRow("Sound Energy Threshold: ", self.energyLevelThreshold)
     #
     # threshold value
     #
@@ -118,12 +118,11 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.textBox = qt.QLabel(" ")
     self.textBox.toolTip = "User input"
     self.textBox.setTextFormat(0) #plain text 
-    parametersFormLayout.addRow(self.textBox)
+    parametersFormLayout.addRow("Speech: ", self.textBox)
 
     # connections
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
-    # self.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
-    #self.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
+    
 
     # Add vertical spacer
     self.layout.addStretch(1)
@@ -136,7 +135,15 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   def onSelect(self):
     print(5)
-    #self.applyButton.enabled = self.inputSelector.currentNode() and self.outputSelector.currentNode()
+
+  # logic when threshold is changed 
+  def threshold_changed(self):
+    print(self.energyLevelThreshold.value)
+    self.recognizer.energy_threshold = self.energyLevelThreshold.value
+
+  # logic when microphone is selected 
+  def microphone_changed(self):
+    print(self.microphoneSelector.currentIndex)
 
   def onApplyButton(self):
     #print("testing")
@@ -148,10 +155,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     #self.displayLabel.setText("Press to begin listening:")
 
-    # enableScreenshotsFlag = self.enableScreenshotsFlagCheckBox.checked
-    # imageThreshold = self.imageThresholdSliderWidget.value
-    #logic.run(self.inputSelector.currentNode(), self.outputSelector.currentNode(), imageThreshold, enableScreenshotsFlag)
-
+    
   def startLogic(self):
     logic = VoiceRecognitionLogic()
     self.textBox.setText(logic.interpreter(self.recognizer, self.microphone))
@@ -195,94 +199,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
 
   #def initMicrophone(self):
-    
-
-
-  def hasImageData(self,volumeNode):
-    """This is an example logic method that
-    returns true if the passed in volume
-    node has valid image data
-    """
-    if not volumeNode:
-      logging.debug('hasImageData failed: no volume node')
-      return False
-    if volumeNode.GetImageData() is None:
-      logging.debug('hasImageData failed: no image data in volume node')
-      return False
-    return True
-
-  def isValidInputOutputData(self, inputVolumeNode, outputVolumeNode):
-    """Validates if the output is not the same as input
-    """
-    if not inputVolumeNode:
-      logging.debug('isValidInputOutputData failed: no input volume node defined')
-      return False
-    if not outputVolumeNode:
-      logging.debug('isValidInputOutputData failed: no output volume node defined')
-      return False
-    if inputVolumeNode.GetID()==outputVolumeNode.GetID():
-      logging.debug('isValidInputOutputData failed: input and output volume is the same. Create a new volume for output to avoid this error.')
-      return False
-    return True
-
-  def takeScreenshot(self,name,description,type=-1):
-    # show the message even if not taking a screen shot
-    slicer.util.delayDisplay('Take screenshot: '+description+'.\nResult is available in the Annotations module.', 3000)
-
-    lm = slicer.app.layoutManager()
-    # switch on the type to get the requested window
-    widget = 0
-    if type == slicer.qMRMLScreenShotDialog.FullLayout:
-      # full layout
-      widget = lm.viewport()
-    elif type == slicer.qMRMLScreenShotDialog.ThreeD:
-      # just the 3D window
-      widget = lm.threeDWidget(0).threeDView()
-    elif type == slicer.qMRMLScreenShotDialog.Red:
-      # red slice window
-      widget = lm.sliceWidget("Red")
-    elif type == slicer.qMRMLScreenShotDialog.Yellow:
-      # yellow slice window
-      widget = lm.sliceWidget("Yellow")
-    elif type == slicer.qMRMLScreenShotDialog.Green:
-      # green slice window
-      widget = lm.sliceWidget("Green")
-    else:
-      # default to using the full window
-      widget = slicer.util.mainWindow()
-      # reset the type so that the node is set correctly
-      type = slicer.qMRMLScreenShotDialog.FullLayout
-
-    # grab and convert to vtk image data
-    qimage = ctk.ctkWidgetsUtils.grabWidget(widget)
-    imageData = vtk.vtkImageData()
-    slicer.qMRMLUtils().qImageToVtkImageData(qimage,imageData)
-
-    annotationLogic = slicer.modules.annotations.logic()
-    annotationLogic.CreateSnapShot(name, description, type, 1, imageData)
-
-  def run(self, inputVolume, outputVolume, imageThreshold, enableScreenshots=0):
-    """
-    Run the actual algorithm
-    """
-
-    if not self.isValidInputOutputData(inputVolume, outputVolume):
-      slicer.util.errorDisplay('Input volume is the same as output volume. Choose a different output volume.')
-      return False
-
-    logging.info('Processing started')
-
-    # Compute the thresholded output volume using the Threshold Scalar Volume CLI module
-    cliParams = {'InputVolume': inputVolume.GetID(), 'OutputVolume': outputVolume.GetID(), 'ThresholdValue' : imageThreshold, 'ThresholdType' : 'Above'}
-    cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True)
-
-    # Capture screenshot
-    if enableScreenshots:
-      self.takeScreenshot('VoiceRecognitionTest-Start','MyScreenshot',-1)
-
-    logging.info('Processing completed')
-
-    return True
 
 
 class VoiceRecognitionTest(ScriptedLoadableModuleTest):
