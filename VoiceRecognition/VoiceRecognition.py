@@ -60,11 +60,9 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.microphoneList = sr.Microphone.list_microphone_names()
     self.microphoneSelector.addItem("Default")
     self.microphoneSelector.addItems(self.microphoneList)
-    self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
     parametersFormLayout.addRow("Choose microphone: ", self.microphoneSelector)
 
-    self.recognizer = sr.Recognizer()
-    self.microphone = sr.Microphone()
+
 
 
     
@@ -77,7 +75,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.energyLevelThreshold.minimum = 0
     self.energyLevelThreshold.maximum = 5000
     self.energyLevelThreshold.value = 300
-    self.energyLevelThreshold.valueChanged.connect(self.threshold_changed)
     self.energyLevelThreshold.tracking = False
     self.energyLevelThreshold.setToolTip("Sets the threshold value for sounds. Value below this threshold is considered silence. Silent rooms are from 0-100, values for speaking 150-3500. Adjust if necessary")
     
@@ -110,17 +107,27 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.applyButton.enabled = True
     parametersFormLayout.addRow(self.applyButton)
 
-    self.displayLabel = qt.QLabel("Press to begin listening:")
-    self.displayLabel.setTextFormat(0) # plain text
-    parametersFormLayout.addRow(self.displayLabel)
+    # self.displayLabel = qt.QLabel("Press to begin listening:")
+    # self.displayLabel.setTextFormat(0) # plain text
+    # parametersFormLayout.addRow(self.displayLabel)
 
     self.textBox = qt.QLabel(" ")
     self.textBox.toolTip = "User input"
     self.textBox.setTextFormat(0) #plain text 
     parametersFormLayout.addRow("Speech: ", self.textBox)
 
+    self.errors = qt.QLabel(" ")
+    self.errors.setTextFormat(0)
+    parametersFormLayout.addRow("Errors: ", self.errors)
+
+
+
     # connections
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
+    self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
+    self.energyLevelThreshold.valueChanged.connect(self.threshold_changed)
+
+
     
 
     # Add vertical spacer
@@ -128,6 +135,14 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     # Refresh Apply button state
     self.onSelect()
+
+    self.recognizer = sr.Recognizer()
+    try: 
+      self.microphone = sr.Microphone()
+
+    except(IOError):
+      print("ERROR: No default microphone. Check if microphone is plugged in")
+      self.errors.setText("ERROR: No default microphone. Check if microphone is plugged in")
 
   def cleanup(self):
     pass
