@@ -76,10 +76,10 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     # check box to trigger taking screen shots for later use in tutorials
     #
-    # self.enableScreenshotsFlagCheckBox = qt.QCheckBox()
-    # self.enableScreenshotsFlagCheckBox.checked = 0
-    # self.enableScreenshotsFlagCheckBox.setToolTip("If checked, take screen shots for tutorials. Use Save Data to write them to disk.")
-    # parametersFormLayout.addRow("Enable Screenshots", self.enableScreenshotsFlagCheckBox)
+    self.dynamicEnergyThreshold = qt.QCheckBox()
+    self.dynamicEnergyThreshold.checked = 0
+    self.dynamicEnergyThreshold.setToolTip("Check if the ambient noise in the room is not controlled, i.e. in a noisy room ")
+    parametersFormLayout.addRow("Enable Dynamic Energy Threshold: ", self.dynamicEnergyThreshold)
 
     #
     # Apply Button
@@ -106,6 +106,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
     self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
     self.energyLevelThreshold.valueChanged.connect(self.threshold_changed)
+    self.dynamicEnergyThreshold.clicked.connect(self.dynamicThreshold)
 
     # Add vertical spacer
     self.layout.addStretch(1)
@@ -146,6 +147,10 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
       self.microphone = sr.Microphone()    
     else: 
       self.microphone = sr.Microphone(device_index = index - 1)
+
+  def dynamicThreshold(self):
+    print(self.dynamicEnergyThreshold.checked)
+    self.recognizer.dynamic_energy_threshold = self.dynamicEnergyThreshold.checked
 
 
   def onApplyButton(self):
@@ -283,6 +288,9 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
   def toggle(self, node):
     node.SetSliceVisible(not node.GetSliceVisible())
+
+  def changeAxis(self, threeDView, viewNumber):
+    threeDView.lookFromAxis(viewNumber)
 
   # input: takes speech-to-text and parses to execute commands 
   def parse(self, text):
