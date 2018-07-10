@@ -38,12 +38,12 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   """
 
   def setup(self):
-    print(5)
-    # self.recognizer = sr.Recognizer()
-    # self.microphone = sr.Microphone()
     ScriptedLoadableModuleWidget.setup(self)
 
-    # Instantiate and connect widgets ...
+    # Initializes layout manager: 
+
+    self.lm = slicer.app.layoutManager()
+    self.threeDView = self.lm.threeDWidget(0).threeDView()
 
     #
     # Parameters Area
@@ -62,13 +62,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.microphoneSelector.addItems(self.microphoneList)
     parametersFormLayout.addRow("Choose microphone: ", self.microphoneSelector)
 
-
-
-
-    
-    #self.microphone = sr.Microphone()
-
-
     # Sound energy level threshold value
     self.energyLevelThreshold = ctk.ctkSliderWidget()
     self.energyLevelThreshold.singleStep = 1 
@@ -80,16 +73,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     
 
     parametersFormLayout.addRow("Sound Energy Threshold: ", self.energyLevelThreshold)
-    #
-    # threshold value
-    #
-    # self.imageThresholdSliderWidget = ctk.ctkSliderWidget()
-    # self.imageThresholdSliderWidget.singleStep = 0.1
-    # self.imageThresholdSliderWidget.minimum = -100
-    # self.imageThresholdSliderWidget.maximum = 100
-    # self.imageThresholdSliderWidget.value = 0.5
-    # self.imageThresholdSliderWidget.setToolTip("Set threshold value for computing the output image. Voxels that have intensities lower than this value will set to zero.")
-    # parametersFormLayout.addRow("Image threshold", self.imageThresholdSliderWidget)
 
     #
     # check box to trigger taking screen shots for later use in tutorials
@@ -106,6 +89,21 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.applyButton.toolTip = "Listens for voice."
     self.applyButton.enabled = True
     parametersFormLayout.addRow(self.applyButton)
+
+    # self.roll = qt.QPushButton("Roll")
+    # self.roll.toolTip = "Listens for voice."
+    # self.roll.enabled = True
+    # parametersFormLayout.addRow(self.roll)
+
+    # self.pitch = qt.QPushButton("Pitch")
+    # self.pitch.toolTip = "Listens for voice."
+    # self.pitch.enabled = True
+    # parametersFormLayout.addRow(self.pitch)
+
+    # self.yaw = qt.QPushButton("Yaw")
+    # self.yaw.toolTip = "Listens for voice."
+    # self.yaw.enabled = True
+    # parametersFormLayout.addRow(self.yaw)
 
     # self.displayLabel = qt.QLabel("Press to begin listening:")
     # self.displayLabel.setTextFormat(0) # plain text
@@ -124,6 +122,11 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     # connections
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
+    # self.pitch.connect('clicked(bool)', self.Pitch)
+    # self.roll.connect('clicked(bool)', self.Roll)
+    # self.yaw.connect('clicked(bool)', self.Yaw)
+
+
     self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
     self.energyLevelThreshold.valueChanged.connect(self.threshold_changed)
 
@@ -170,10 +173,18 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     else: 
       self.microphone = sr.Microphone(device_index = index - 1)
 
+  # def Roll(self): 
+  #   self.threeDView.roll()
+
+  # def Pitch(self): 
+  #   self.threeDView.pitch()
+
+  # def Yaw(self):
+  #   self.threeDView.yaw()
+
   def onApplyButton(self):
-    #print("testing")
     #elf.displayLabel.setText("Listening for speech....")
-    slicer.util.delayDisplay("Listening for speech....")
+    slicer.util.delayDisplay("Wait...", 2000)
     self.startLogic()
     #logic = VoiceRecognitionLogic()
     #self.textBox.setText(logic.initMicrophone())
@@ -184,7 +195,10 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     
   def startLogic(self):
     logic = VoiceRecognitionLogic()
-    self.textBox.setText(logic.interpreter(self.recognizer, self.microphone))
+    text = logic.interpreter(self.recognizer, self.microphone)
+    self.textBox.setText(text)
+    logic.parse(self.lm, text)
+
 #
 # VoiceRecognitionLogic
 #
@@ -198,6 +212,109 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   Uses ScriptedLoadableModuleLogic base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
+
+  """
+  Setting layout: 
+    0  -  Initial View                  11  -  Lightbox View
+    1  -  Default View                  12  -  Compare View 
+    2  -  Coventional View              13  -  Side by Side Lightbox View 
+    3  -  Four Up View                  14  -  None
+    4  -  One Up 3D View                15  -  Dual 3D View   
+    5  -  One Up Slice View             16  -  Conventional Widescreen View 
+    6  -  One Up Red Slice View         17  -  Comp;are Widescreen View 
+    7  -  One Up Yellow Slice View      18  -  Single Lightbox view 
+    8  -  One Up Green Slice View       19  -  Triple 3D Endoscopy View 
+    9  -  Tabbed 3D View                20  -  3D Plus Lightbox view 
+    10 -  Tabbed Slice View             21  -  Three Over Three View 
+
+    22  -  Four Over Four View                  33  -  Three By Three Slice View 
+    23  -  Compare Grid View                    34  -  Four Up Table View  
+    24  -  Conventional Quantitative View       35  -  3D Table eView  
+    25 -  Four Up Quantitative View             36  -  Conventional Plot View 
+    26  -  One Up Quantitative View             37  -  Four Up Plot View   
+    27  -  Two Over Two view                    38  -  Four Up Plot Table View 
+    28  -  Three Over Three Quantitative View   39  -  One Up Plot View  
+    29  -  side by side view                    40  -  Three Over Three Plot View  
+    30  -  Four by Three Slice View           
+    31  -  Four by Two Slice View              
+    32 -   Five by Two Slice View   
+
+  View from Axis: 
+    0 - None 
+    1 - Right 
+    2 - Left 
+    3 - superior 
+    4 - inferior 
+    5 - anterior 
+    6 - posterior             
+  """
+
+  def representsInt(self, s): 
+    try: 
+      int(s)
+      return True
+    except ValueError: 
+      return False 
+
+  def pitch(self, threeDView, increment):
+    threeDView.setPitchRollYawIncrement(increment)
+    threeDView.pitch()
+
+  def roll(self, threeDView, increment): 
+    threeDView.setPitchRollYawIncrement(increment)
+    threeDView.roll()
+
+  def yaw(self, threeDView, increment): 
+    threeDView.setPitchRollYawIncrement(increment)
+    threeDView.yaw()
+
+  def zoomIn(self, threeDView, increment):
+    threeDView.setZoomFactor(increment)
+    threeDView.zoomIn()
+
+  def zoomOut(self, threeDView, increment): 
+    threeDView.setZoomFactor(increment)
+    threeDView.zoomOut()
+
+
+  def parse(self, layoutManager, text):
+    words = text.split()
+    threeDView = layoutManager.threeDWidget(0).threeDView()
+
+    red = layoutManager.sliceWidget('Red')
+    yellow = layoutManager.sliceWidget('Yellow')
+    green = layoutManager.sliceWidget('Green')
+
+    redController = red.sliceController()
+    yellowController = yellow.sliceController()
+    greenController = green.sliceController()
+
+    redLogic = red.sliceLogic()
+    yellowLogic = yellow.sliceLogic()
+    greenLogic = green.sliceLogic()
+
+    redNode = redLogic.GetSliceNode()
+    yellowNode = yellowLogic.GetSliceNode()
+    greenNode = greenLogic.GetSliceNode()
+
+    [word.lower() for word in words]
+
+    # prase the words and execute commands 
+    for word in words: 
+      if(word == "pitch"): 
+        for secondWord in words: 
+          if(self.representsInt(secondWord)):
+            self.pitch(threeDView, int(secondWord))
+
+      if(word == "yaw"): 
+        for secondWord in words: 
+          if(self.representsInt(secondWord)):
+            self.yaw(threeDView, int(secondWord))
+
+      if(word == "roll"): 
+        for secondWord in words: 
+          if(self.representsInt(secondWord)):
+            self.roll(threeDView, int(secondWord))
 
 
   def interpreter(self, recognizer, microphone):
@@ -214,17 +331,12 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     
     try: 
       return recognizer.recognize_google(audio)
-
+    # handles any api/voice errors  errors 
     except sr.RequestError: 
       return "There was an issue in handling the request, please try again"
     except sr.UnknownValueError:
       return "Unable to Recognize speech"
-    #return recognizer.recognize_google(audio)
 
-
-
-
-  #def initMicrophone(self):
 
 
 class VoiceRecognitionTest(ScriptedLoadableModuleTest):
