@@ -21,7 +21,7 @@ class VoiceRecognition(ScriptedLoadableModule):
     self.parent.dependencies = []
     self.parent.contributors = ["Steve Li (BWH)"] # replace with "Firstname Lastname (Organization)"
     self.parent.helpText = """
-Voice control software for basic commands
+Voice control module. 
 """
     self.parent.helpText += self.getDefaultModuleDocumentationLink()
     self.parent.acknowledgementText = """
@@ -192,7 +192,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
    /
   /
 
-  
+
   Setting layout: 
     0  -  Initial View                  11  -  Lightbox View
     1  -  Default View                  12  -  Compare View 
@@ -235,17 +235,17 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.yellow = layoutManager.sliceWidget('Yellow')
     self.green = layoutManager.sliceWidget('Green')
 
-    self.redController = red.sliceController()
-    self.yellowController = yellow.sliceController()
-    self.greenController = green.sliceController()
+    self.redController = self.red.sliceController()
+    self.yellowController = self.yellow.sliceController()
+    self.greenController = self.green.sliceController()
 
-    self.redLogic = red.sliceLogic()
-    self.yellowLogic = yellow.sliceLogic()
-    self.greenLogic = green.sliceLogic()
+    self.redLogic = self.red.sliceLogic()
+    self.yellowLogic = self.yellow.sliceLogic()
+    self.greenLogic = self.green.sliceLogic()
 
-    self.redNode = redLogic.GetSliceNode()
-    self.yellowNode = yellowLogic.GetSliceNode()
-    self.greenNode = greenLogic.GetSliceNode()
+    self.redNode = self.redLogic.GetSliceNode()
+    self.yellowNode = self.yellowLogic.GetSliceNode()
+    self.greenNode = self.greenLogic.GetSliceNode()
 
   def pitch(self, threeDView, increment):
     threeDView.setPitchRollYawIncrement(increment)
