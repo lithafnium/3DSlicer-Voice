@@ -181,6 +181,18 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   """
 
   """
+      |
+      |  yaw
+      |
+      |
+      |
+      |______________  pitch
+     /
+    / roll
+   /
+  /
+
+  
   Setting layout: 
     0  -  Initial View                  11  -  Lightbox View
     1  -  Default View                  12  -  Compare View 
