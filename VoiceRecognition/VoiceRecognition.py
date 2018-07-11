@@ -169,6 +169,9 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   def startLogic(self):
     logic = VoiceRecognitionLogic(self.lm)
     text = logic.interpreter(self.recognizer, self.microphone)
+    # listens in the background 
+    #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
+
     self.textBox.setText(text)
     logic.parse(text)
 
@@ -250,6 +253,18 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.yellowNode = self.yellowLogic.GetSliceNode()
     self.greenNode = self.greenLogic.GetSliceNode()
 
+  # condensed version of pitch, roll, yaw --> use later once speech recognition is more accurate 
+  # def manipulate3DView(self, word, threeDView, increment):
+  #   threeDView.setPitchRollYawIncrement(increment)
+  #   if(word == "pitch"): 
+  #     thereDView.pitch()
+
+  #   if(word == "yaw"):
+  #     threeDView.yaw()
+
+  #   if(word == "roll"):
+  #     threeDView.roll()
+
   def pitch(self, threeDView, increment):
     threeDView.setPitchRollYawIncrement(increment)
     threeDView.pitch()
@@ -275,20 +290,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       return True
     except ValueError:
       return False
-
-  # condensed version of pitch, roll, yaw --> use later once speech recognition is more accurate 
-  # def manipulate3DView(self, word, threeDView, increment):
-  #   threeDView.setPitchRollYawIncrement(increment)
-  #   if(word == "pitch"): 
-  #     thereDView.pitch()
-
-  #   if(word == "yaw"):
-  #     threeDView.yaw()
-
-  #   if(word == "roll"):
-  #     threeDView.roll()
-
-  
 
   def zoomIn(self, threeDView, increment):
     threeDView.setZoomFactor(increment)
