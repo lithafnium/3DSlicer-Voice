@@ -100,6 +100,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     self.errors = qt.QLabel(" ")
     self.errors.setTextFormat(0)
+    self.errors.setWordWrap(True)
     parametersFormLayout.addRow("Errors: ", self.errors)
 
     # connections
