@@ -77,7 +77,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     # check box to trigger taking screen shots for later use in tutorials
     #
     self.dynamicEnergyThreshold = qt.QCheckBox()
-    self.dynamicEnergyThreshold.checked = 0
+    self.dynamicEnergyThreshold.checked = 1
     self.dynamicEnergyThreshold.setToolTip("Check if the ambient noise in the room is not controlled, i.e. in a noisy room ")
     parametersFormLayout.addRow("Enable Dynamic Energy Threshold: ", self.dynamicEnergyThreshold)
 
@@ -116,6 +116,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     #Initializes recognizer and microphone 
     self.recognizer = sr.Recognizer()
+
     try: 
       self.microphone = sr.Microphone()
 
@@ -229,6 +230,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   """
   # constructor, initializes everything
   def __init__(self, layoutManager):
+    self.layoutManager = layoutManager
     self.threeDView = layoutManager.threeDWidget(0).threeDView()
 
     self.red = layoutManager.sliceWidget('Red')
@@ -310,41 +312,44 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.words = text.split()
     
 
-    [word.lower() for word in words]
+    [word.lower() for word in self.words]
 
     # prase the words and execute commands 
-    if("zoom in" in textLower): 
-      for word in words: 
+    if("zoom in" in self.textLower): 
+      for word in self.words: 
         if(self.representsFloat(word)):
           self.zoomIn(self.threeDView, float(word))
 
-    if("zoom out" in textLower):
-      for word in words: 
+    if("zoom out" in self.textLower):
+      for word in self.words: 
         if(self.representsFloat(word)):
           self.zoomOut(self.threeDView, float(word))
     
-    if("show red" in textLower): 
+    if("show red" in self.textLower): 
       self.setLayout(self.layoutManager, 6)
 
-    if("show yellow" in textLower):
+    if("show yellow" in self.textLower):
       self.setLayout(self.layoutManager, 7)
 
-    if("show green" in textLower):
+    if("show green" in self.textLower):
       self.setLayout(self.layoutManager, 8)
 
-    if("pitch" in textLower):
-      for secondWord in words: 
+    if("conventional" in self.textLower):
+      self.setLayout(self.layoutManager, 2)
+
+    if("pitch" in self.textLower):
+      for secondWord in self.words: 
         if(self.representsInt(secondWord)):
           self.pitch(self.threeDView, int(secondWord))
 
-    if("yaw" in textLower):
-      for secondWord in words: 
+    if("yaw" in self.textLower):
+      for secondWord in self.words: 
         if(self.representsInt(secondWord)):
           self.yaw(self.threeDView, int(secondWord))
 
 
-    if("roll" in textLower):
-      for secondWord in words: 
+    if("roll" in self.textLower):
+      for secondWord in self.words: 
         if(self.representsInt(secondWord)):
           self.roll(self.threeDView, int(secondWord))
     
