@@ -60,7 +60,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.microphoneList = sr.Microphone.list_microphone_names()
     self.microphoneSelector.addItem("Default")
     self.microphoneSelector.addItems(self.microphoneList)
-    parametersFormLayout.addRow("Choose microphone: ", self.microphoneSelector)
+    parametersFormLayout.addRow("Select Microphone: ", self.microphoneSelector)
 
     # Sound energy level threshold value
     self.energyLevelThreshold = ctk.ctkSliderWidget()
@@ -307,6 +307,9 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   def changeAxis(self, threeDView, viewNumber):
     threeDView.lookFromAxis(viewNumber)
 
+  def manipulateSlice(self, sliceController, offset):
+    sliceController.setSliceOffsetValue(offset)
+
   # input: takes speech-to-text and parses to execute commands 
   def parse(self, text):
     self.textLower = text.lower()
@@ -334,6 +337,22 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
     if("show green" in self.textLower):
       self.setLayout(self.layoutManager, 8)
+
+    if("red offset" in self.textLower):
+      for word in self.words: 
+        if(self.representsFloat(word)):
+          self.manipulateSlice(self.redController, float(word))
+
+    if("yellow offset" in self.textLower):
+      for word in self.words: 
+        if(self.representsFloat(word)):
+          self.manipulateSlice(self.yellowController, float(word))
+
+    if("green offset" in self.textLower):
+      for word in self.words: 
+        if(self.representsFloat(word)):
+          self.manipulateSlice(self.greenController, float(word))
+
 
     if("conventional" in self.textLower):
       self.setLayout(self.layoutManager, 2)
