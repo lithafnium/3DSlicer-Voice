@@ -3,8 +3,9 @@ import unittest
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 import logging
-
 import speech_recognition as sr
+import time 
+
 #
 # VoiceRecognition
 #
@@ -89,15 +90,13 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.applyButton.enabled = True
     parametersFormLayout.addRow(self.applyButton)
 
-    # self.displayLabel = qt.QLabel("Press to begin listening:")
-    # self.displayLabel.setTextFormat(0) # plain text
-    # parametersFormLayout.addRow(self.displayLabel)
-
+    # speech to text label 
     self.textBox = qt.QLabel(" ")
     self.textBox.toolTip = "User input"
     self.textBox.setTextFormat(0) #plain text 
     parametersFormLayout.addRow("Speech: ", self.textBox)
 
+    # Error label 
     self.errors = qt.QLabel(" ")
     self.errors.setTextFormat(0)
     self.errors.setWordWrap(True)
@@ -117,7 +116,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     #Initializes recognizer and microphone 
     self.recognizer = sr.Recognizer()
-
     try: 
       self.microphone = sr.Microphone()
 
@@ -125,6 +123,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
       print("ERROR: No default microphone. Check if microphone is plugged in or if you have a default microphone set in your sound settings.")
       self.errors.setText("ERROR: No default microphone. Check if your microphone is plugged in or if you have a default microphone set in your sound settings.")
 
+    
   def cleanup(self):
     pass
 
@@ -154,18 +153,35 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     print(self.dynamicEnergyThreshold.checked)
     self.recognizer.dynamic_energy_threshold = self.dynamicEnergyThreshold.checked
 
+  def callback(self, recognizer, audio):
+    try: 
+      print(recognizer.recognize_google(audio))
+    # handles any api/voice errors  errors 
+    except sr.RequestError: 
+      print( "There was an issue in handling the request, please try again")
+    except sr.UnknownValueError:
+      print("Unable to Recognize speech")
 
   def onApplyButton(self):
     #self.displayLabel.setText("Listening for speech....")
     slicer.util.delayDisplay("Wait...", 2000)
+
+    # self.recognizer = sr.Recognizer()
+    # try: 
+    #   self.microphone = sr.Microphone()
+
+    # except(IOError):
+    #   print("ERROR: No default microphone. Check if microphone is plugged in or if you have a default microphone set in your sound settings.")
+    #   self.errors.setText("ERROR: No default microphone. Check if your microphone is plugged in or if you have a default microphone set in your sound settings.")
+
+    # with self.microphone as source:
+    #   self.recognizer.adjust_for_ambient_noise(source)
+
+    # stop_listening = self.recognizer.listen_in_background(self.microphone, self.callback)
+
     self.startLogic()
-    #logic = VoiceRecognitionLogic()
-    #self.textBox.setText(logic.initMicrophone())
-    #print(logic.initMicrophone())
 
-    #self.displayLabel.setText("Press to begin listening:")
 
-    
   def startLogic(self):
     logic = VoiceRecognitionLogic(self.lm)
     text = logic.interpreter(self.recognizer, self.microphone)
@@ -320,6 +336,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     [word.lower() for word in self.words]
 
     # prase the words and execute commands 
+    # TODO: put in more phrases/words in case speech recognition api thinks it's another word i.e. pitch and yaw 
     if("zoom in" in self.textLower): 
       for word in self.words: 
         if(self.representsFloat(word)):
@@ -329,6 +346,15 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       for word in self.words: 
         if(self.representsFloat(word)):
           self.zoomOut(self.threeDView, float(word))
+
+    if("toggle red" in self.textLower):
+      self.toggle(self.redNode)
+
+    if("toggle yellow" in self.textLower):
+      self.toggle(self.yellowNode)
+
+    if("toggle green" in self.textLower):
+      self.toggle(self.greenNode)
     
     if("show red" in self.textLower): 
       self.setLayout(self.layoutManager, 6)
@@ -399,7 +425,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       return "Unable to Recognize speech"
 
 
-
+# TODO: think of ways to test the module 
 class VoiceRecognitionTest(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
@@ -430,6 +456,9 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
     your test should break so they know that the feature is needed.
     """
 
+    self.lm = slicer.app.layoutManager()
+
+
     self.delayDisplay("Starting the test")
     #
     # first, get some data
@@ -450,6 +479,64 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
     self.delayDisplay('Finished with download and loading')
 
     volumeNode = slicer.util.getNode(pattern="FA")
-    logic = VoiceRecognitionLogic()
-    self.assertIsNotNone( logic.hasImageData(volumeNode) )
+    logic = VoiceRecognitionLogic(self.lm)
+
+    self.threeDView = self.lm.threeDWidget(0).threeDView()
+
+    self.red = self.lm.sliceWidget('Red')
+    self.yellow = self.lm.sliceWidget('Yellow')
+    self.green = self.lm.sliceWidget('Green')
+
+    self.redController = self.red.sliceController()
+    self.yellowController = self.yellow.sliceController()
+    self.greenController = self.green.sliceController()
+
+    self.redLogic = self.red.sliceLogic()
+    self.yellowLogic = self.yellow.sliceLogic()
+    self.greenLogic = self.green.sliceLogic()
+
+    self.redNode = self.redLogic.GetSliceNode()
+    self.yellowNode = self.yellowLogic.GetSliceNode()
+    self.greenNode = self.greenLogic.GetSliceNode()
+
+    self.delayDisplay('Toggling slides')
+
+    logic.toggle(self.redNode)
+    logic.toggle(self.yellowNode)
+    logic.toggle(self.greenNode)
+
+    self.timer = qt.QTimer()
+
+
+    self.delayDisplay('testing rotation')
+    for i in range(10):
+      self.delayDisplay("rotating", 250)
+      logic.pitch(self.threeDView, 36)
+
+
+    for i in range(10):
+      self.delayDisplay("rotating", 250)
+      logic.yaw(self.threeDView, 36)
+
+    for i in range(10):
+      self.delayDisplay("rotating", 250)
+      logic.roll(self.threeDView, 36)
+
+
+    # logic.zoomIn(self.threeDView, 0.2)
+    # time.sleep(1.0)
+
+    # logic.zoomOut(self.threeDView, 0.2)
+
+
+
+
+
+
+
+
+
+
+
+    # self.assertIsNotNone( logic.hasImageData(volumeNode) )
     self.delayDisplay('Test passed!')
