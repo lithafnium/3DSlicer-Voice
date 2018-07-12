@@ -522,11 +522,31 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
       self.delayDisplay("rotating", 250)
       logic.roll(self.threeDView, 36)
 
+    self.delayDisplay("Testing Zoom")
 
-    # logic.zoomIn(self.threeDView, 0.2)
+    self.delayDisplay("Zoom in")
+    logic.zoomIn(self.threeDView, 0.2)
     # time.sleep(1.0)
 
-    # logic.zoomOut(self.threeDView, 0.2)
+    self.delayDisplay("Zoom out")
+    logic.zoomOut(self.threeDView, 0.2)
+
+    self.delayDisplay("Red view")
+    logic.setLayout(self.lm, 6)
+
+    self.delayDisplay("Yellow View")
+    logic.setLayout(self.lm, 7)
+
+    self.delayDisplay("Green View")
+    logic.setLayout(self.lm, 8)
+
+    self.delayDisplay("Conventional")
+    logic.setLayout(self.lm, 2)
+
+    self.delayDisplay("View axis")
+    for i in range(6):
+      self.delayDisplay("view")
+      logic.changeAxis(self.threeDView, i)
 
 
 
