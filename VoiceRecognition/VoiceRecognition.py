@@ -389,6 +389,8 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       audio = recognizer.listen(source)
     
     try: 
+      print(recognizer.recognize_google(audio))
+      #self.parse(recognizer.recognize_google())
       return recognizer.recognize_google(audio)
     # handles any api/voice errors  errors 
     except sr.RequestError: 
