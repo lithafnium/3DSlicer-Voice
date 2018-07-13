@@ -137,14 +137,17 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   def cleanup(self):
     pass
 
+  
   def onSelect(self):
     print(5)
 
+  
   # logic when threshold is changed 
   def threshold_changed(self):
     print(self.energyLevelThreshold.value)
     self.recognizer.energy_threshold = self.energyLevelThreshold.value
 
+  
   # logic when microphone is selected 
   def microphone_changed(self):
     print(self.microphoneSelector.currentIndex)
@@ -153,19 +156,21 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     index = self.microphoneSelector.currentIndex
     print("index: ", index)
 
-    
     if(index == 0): 
       self.microphone = sr.Microphone()    
     else: 
       self.microphone = sr.Microphone(device_index = index - 1)
 
+  
   def dynamicThreshold(self):
     print(self.dynamicEnergyThreshold.checked)
     self.recognizer.dynamic_energy_threshold = self.dynamicEnergyThreshold.checked
 
+  
   def onRepeatButton(self):
     self.logic.parse("repeat")
 
+  
   def callback(self, recognizer, audio):
     try: 
       print(recognizer.recognize_google(audio))
@@ -175,11 +180,12 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     except sr.UnknownValueError:
       print("Unable to Recognize speech")
 
+  
   def onApplyButton(self):
     #self.displayLabel.setText("Listening for speech....")
     slicer.util.delayDisplay("Wait...", 2000)
 
-    # TODO: Background listening stuff --> will to
+    # TODO: Background listening stuff --> not working will try once I get a reponse 
     # self.recognizer = sr.Recognizer()
     # try: 
     #   self.microphone = sr.Microphone()
@@ -261,8 +267,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     5 - anterior 
     6 - posterior             
   """
-
-  # terms as variables to keep code more organized
+  # Parameters array is used to store function parameters when user asks to repaet a function 
   parameters = []
   pitch_terms = ["pitch", "catch", "touch", "patch"]
   yaw_terms = ["yaw", "yeah"]
@@ -288,6 +293,8 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.redNode = self.redLogic.GetSliceNode()
     self.yellowNode = self.yellowLogic.GetSliceNode()
     self.greenNode = self.greenLogic.GetSliceNode()
+
+    # sets last function as the previous command 
     self.previous_command = self.pitch
 
 
@@ -315,6 +322,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     threeDView.setPitchRollYawIncrement(increment)
     threeDView.yaw()
 
+  # checks if a string is an int 
   def representsInt(self, s): 
     try: 
       int(s)
@@ -322,6 +330,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     except ValueError: 
       return False 
 
+  # checks if a string is a float 
   def representsFloat(self, s):
     try:
       float(s)
@@ -360,7 +369,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     # prase the words and execute commands 
     # TODO: put in more phrases/words in case speech recognition api thinks it's another word i.e. pitch and yaw 
 
-
     if("zoom" in self.textLower):
       zoom_factor = 0.5
       VoiceRecognitionLogic.parameters = []
@@ -379,25 +387,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       if("out" in self.textLower):
         self.zoomOut(self.threeDView, zoom_factor)
         self.previous_command = self.zoomOut
-
-    # if(VoiceRecognitionLogic.zoom_in in self.textLower): 
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-
-    #       VoiceRecognitionLogic.parameters = []
-    #       self.zoomIn(self.threeDView, float(word))
-    #       VoiceRecognitionLogic.parameters.append(self.threeDView)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.zoomIn
-
-    # if(VoiceRecognitionLogic.zoom_out in self.textLower):
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       parameters = []
-    #       self.zoomOut(self.threeDView, float(word))
-    #       VoiceRecognitionLogic.parameters.append(self.threeDView)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.zoomOut
 
     if("toggle" in self.textLower):
       VoiceRecognitionLogic.parameters = []
@@ -435,9 +424,34 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         self.setLayout(self.layoutManager, 8)
 
 
+    if("offset" in self.textLower):
+      VoiceRecognitionLogic.parameters = []
+      self.previous_command = self.manipulateSlice
+      offset = 0.4
+
+      for word in self.words: 
+        if(self.representsFloat(word)):
+          offset = float(word)
+          break
+
+      if("red" in self.textLower):
+        VoiceRecognitionLogic.parameters.append(self.redController)
+        VoiceRecognitionLogic.parameters.append(offset)        
+        self.manipulateSlice(self.redController, offset)
+
+      if("yellow" in self.textLower): 
+        VoiceRecognitionLogic.parameters.append(self.yellowController)
+        VoiceRecognitionLogic.parameters.append(offset)        
+        self.manipulateSlice(self.yellowController, offset)
+
+      if("green" in self.textLower):
+        VoiceRecognitionLogic.parameters.append(self.greenController)
+        VoiceRecognitionLogic.parameters.append(offset)        
+        self.manipulateSlice(self.greenController, offset)
 
 
-    # if(VoiceRecognitionLogic.toggle_red in self.textLower):
+
+ # if(VoiceRecognitionLogic.toggle_red in self.textLower):
     #   VoiceRecognitionLogic.parameters = []
     #   self.toggle(self.redNode)
     #   VoiceRecognitionLogic.parameters.append(self.redNode)
@@ -477,32 +491,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
     #   VoiceRecognitionLogic.parameters.append(8)
     #   self.previous_command = self.setLayout
-
-    if("offset" in self.textLower):
-      VoiceRecognitionLogic.parameters = []
-      self.previous_command = self.manipulateSlice
-      offset = 0.4
-      for word in self.words: 
-        if(self.representsFloat(word)):
-          offset = float(word)
-          break
-
-      if("red" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.redController)
-        VoiceRecognitionLogic.parameters.append(offset)        
-        self.manipulateSlice(self.redController, offset)
-
-      if("yellow" in self.textLower): 
-        VoiceRecognitionLogic.parameters.append(self.yellowController)
-        VoiceRecognitionLogic.parameters.append(offset)        
-        self.manipulateSlice(self.yellowController, offset)
-
-      if("green" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.greenController)
-        VoiceRecognitionLogic.parameters.append(offset)        
-        self.manipulateSlice(self.greenController, offset)
-
-
     # if(VoiceRecognitionLogic.offset_red in self.textLower):
     #   for word in self.words: 
     #     if(self.representsFloat(word)):
@@ -532,7 +520,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     #       VoiceRecognitionLogic.parameters.append(float(word))
     #       self.previous_command = self.manipulateSlice
 
-    if(VoiceRecognitionLogic.conventional in self.textLower):
+    if("conventional" in self.textLower):
       VoiceRecognitionLogic.parameters = []
       self.setLayout(self.layoutManager, 2)
       VoiceRecognitionLogic.parameters.append(self.layoutManager)
@@ -566,17 +554,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
             VoiceRecognitionLogic.parameters.append(int(secondWord))
             self.previous_command = self.yaw
 
-    # if("pitch" in self.textLower):
-    #   for secondWord in self.words: 
-    #     if(self.representsInt(secondWord)):
-    #       self.pitch(self.threeDView, int(secondWord))
-
-    # if("yaw" in self.textLower):
-    #   for secondWord in self.words: 
-    #     if(self.representsInt(secondWord)):
-    #       self.yaw(self.threeDView, int(secondWord))
-
-
     if("roll" in self.textLower):
       for secondWord in self.words: 
         if(self.representsInt(secondWord)):
@@ -595,10 +572,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         function(VoiceRecognitionLogic.parameters[0], VoiceRecognitionLogic.parameters[1])
 
 
-
-    
-
-  # interprets the speech
+  # listens to the audio and returns the speech api output 
   def interpreter(self, recognizer, microphone):
     # maybe move to testing 
     if not isinstance(recognizer, sr.Recognizer):
