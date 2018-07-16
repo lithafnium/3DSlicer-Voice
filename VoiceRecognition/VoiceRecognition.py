@@ -208,7 +208,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
 
     self.textBox.setText(text)
-    self.logic.parse("show red")
+    self.logic.parse(text)
 
 #
 # VoiceRecognitionLogic
@@ -294,6 +294,10 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.yellowNode = self.yellowLogic.GetSliceNode()
     self.greenNode = self.greenLogic.GetSliceNode()
 
+    self.redCompositeNode = self.redLogic.GetSliceCompositeNode()
+    self.yellowCompositeNode = self.yellowLogic.GetSliceCompositeNode()
+    self.greenCompositeNode = self.greenLogic.GetSliceCompositeNode()
+
     # sets last function as the previous command 
     self.previous_command = self.pitch
 
@@ -358,6 +362,9 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   def manipulateSlice(self, sliceController, offset):
     sliceController.setSliceOffsetValue(offset)
 
+  def toggleLink(self, compositeNode):
+    compositeNode.SetLinkedControl(not compositeNode.GetLinkedControl())
+
   # input: takes speech-to-text and parses to execute commands 
   def parse(self, text):
     self.textLower = text.lower()
@@ -369,6 +376,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     # prase the words and execute commands 
     # TODO: put in more phrases/words in case speech recognition api thinks it's another word i.e. pitch and yaw 
 
+    # ================ ZOOM ================
     if("zoom" in self.textLower):
       zoom_factor = 0.5
       VoiceRecognitionLogic.parameters = []
@@ -388,6 +396,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         self.zoomOut(self.threeDView, zoom_factor)
         self.previous_command = self.zoomOut
 
+    # ================ TOGGLE ================
     if("toggle" in self.textLower):
       VoiceRecognitionLogic.parameters = []
       self.previous_command = self.toggle
@@ -404,26 +413,26 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         VoiceRecognitionLogic.parameters.append(self.greenNode)
         self.toggle(self.greenNode)
 
+    # ================ SHOW ================
     if("show" in self.textLower):
       VoiceRecognitionLogic.parameters = []
       self.previous_command = self.setLayout
+      VoiceRecognitionLogic.parameters.append(self.layoutManager)
 
       if("red" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.layoutManager)
         VoiceRecognitionLogic.parameters.append(6)        
         self.setLayout(self.layoutManager, 6)
 
       if("yellow" in self.textLower): 
-        VoiceRecognitionLogic.parameters.append(self.layoutManager)
         VoiceRecognitionLogic.parameters.append(7)        
         self.setLayout(self.layoutManager, 7)
 
       if("green" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.layoutManager)
         VoiceRecognitionLogic.parameters.append(8)        
         self.setLayout(self.layoutManager, 8)
 
 
+    # ================ OFFSET ================
     if("offset" in self.textLower):
       VoiceRecognitionLogic.parameters = []
       self.previous_command = self.manipulateSlice
@@ -436,98 +445,46 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
       if("red" in self.textLower):
         VoiceRecognitionLogic.parameters.append(self.redController)
-        VoiceRecognitionLogic.parameters.append(offset)        
         self.manipulateSlice(self.redController, offset)
 
       if("yellow" in self.textLower): 
         VoiceRecognitionLogic.parameters.append(self.yellowController)
-        VoiceRecognitionLogic.parameters.append(offset)        
         self.manipulateSlice(self.yellowController, offset)
 
       if("green" in self.textLower):
         VoiceRecognitionLogic.parameters.append(self.greenController)
-        VoiceRecognitionLogic.parameters.append(offset)        
         self.manipulateSlice(self.greenController, offset)
 
+      VoiceRecognitionLogic.parameters.append(offset)  
 
 
- # if(VoiceRecognitionLogic.toggle_red in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.toggle(self.redNode)
-    #   VoiceRecognitionLogic.parameters.append(self.redNode)
-    #   self.previous_command = self.toggle
+    # ================ LINK/UNLINK ================
+    if("toggle link" in self.textLower):
+      VoiceRecognitionLogic.parameters = []
+      self.previous_command = self.toggleLink
 
-    # if(VoiceRecognitionLogic.toggle_yellow in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.toggle(self.yellowNode)
-    #   VoiceRecognitionLogic.parameters.append(self.yellowNode)
-    #   self.previous_command = self.toggle
+      if("red" in self.textLower):
+        VoiceRecognitionLogic.parameters.append(self.redCompositeNode)
+        toggleLink(self.redCompositeNode)
 
-    # if(VoiceRecognitionLogic.toggle_green in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.toggle(self.greenNode)
-    #   VoiceRecognitionLogic.parameters.append(self.greenNode)
-    #   self.previous_command = self.toggle
-    
-    # if(VoiceRecognitionLogic.show_red in self.textLower): 
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.setLayout(self.layoutManager, 6)
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-    #   VoiceRecognitionLogic.parameters.append(6)
-    #   self.previous_command = self.setLayout
+      if("yellow" in self.textLower): 
+        VoiceRecognitionLogic.parameters.append(self.yellowCompositeNode)
+        toggleLink(self.yellowCompositeNode)
 
+      if("green" in self.textLower): 
+        VoiceRecognitionLogic.parameters.append(self.greenCompositeNode)
+        toggleLink(self.greenCompositeNode)
 
-    # if(VoiceRecognitionLogic.show_yellow in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.setLayout(self.layoutManager, 7)
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-    #   VoiceRecognitionLogic.parameters.append(7)
-    #   self.previous_command = self.setLayout
-
-
-    # if(VoiceRecognitionLogic.show_green in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.setLayout(self.layoutManager, 8)
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-    #   VoiceRecognitionLogic.parameters.append(8)
-    #   self.previous_command = self.setLayout
-    # if(VoiceRecognitionLogic.offset_red in self.textLower):
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       VoiceRecognitionLogic.parameters = []
-    #       self.manipulateSlice(self.redController, float(word))
-    #       VoiceRecognition.parameters.append(self.redController)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.manipulateSlice
-
-
-    # if(VoiceRecognitionLogic.offset_yellow in self.textLower):
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       VoiceRecognitionLogic.parameters = []
-    #       self.manipulateSlice(self.yellowController, float(word))
-    #       VoiceRecognitionLogic.parameters.append(self.yellowController)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.manipulateSlice
-
-
-    # if(VoiceRecognitionLogic.offset_green in self.textLower):
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       VoiceRecognitionLogic.parameters = []
-    #       self.manipulateSlice(self.greenController, float(word))
-    #       VoiceRecognitionLogic.parameters.append(self.greenController)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.manipulateSlice
+    # ================ CONVENTIONAL ================
 
     if("conventional" in self.textLower):
       VoiceRecognitionLogic.parameters = []
       self.setLayout(self.layoutManager, 2)
       VoiceRecognitionLogic.parameters.append(self.layoutManager)
       VoiceRecognitionLogic.parameters.append(2)
-      self.previous_command.setLayout
+      self.previous_command = self.setLayout
 
-
+    # ================ PITCH YAW ROLL ================
     # pitch using different words 
     for word in VoiceRecognitionLogic.pitch_terms:
       if(word in self.textLower):
@@ -539,8 +496,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
             VoiceRecognitionLogic.parameters.append(self.threeDView)
             VoiceRecognitionLogic.parameters.append(int(secondWord))
             self.previous_command = self.pitch
-
-
+            break
 
     for word in VoiceRecognitionLogic.yaw_terms:
       if(word in self.textLower):
@@ -553,6 +509,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
             VoiceRecognitionLogic.parameters.append(self.threeDView)
             VoiceRecognitionLogic.parameters.append(int(secondWord))
             self.previous_command = self.yaw
+            break 
 
     if("roll" in self.textLower):
       for secondWord in self.words: 
@@ -563,13 +520,16 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
           VoiceRecognitionLogic.parameters.append(self.threeDView)
           VoiceRecognitionLogic.parameters.append(int(secondWord))
           self.previous_command = self.roll
+          break
 
+    # ================ REPEAT ================
     if("repeat" in self.textLower):
       function = self.previous_command
       if(len(VoiceRecognitionLogic.parameters) == 1):
         function(VoiceRecognitionLogic.parameters[0])
       if(len(VoiceRecognitionLogic.parameters) == 2):
         function(VoiceRecognitionLogic.parameters[0], VoiceRecognitionLogic.parameters[1])
+
 
 
   # listens to the audio and returns the speech api output 
@@ -721,3 +681,82 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
 
     # self.assertIsNotNone( logic.hasImageData(volumeNode) )
     self.delayDisplay('Test passed!')
+
+
+
+
+
+
+
+
+
+
+
+ # if(VoiceRecognitionLogic.toggle_red in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.toggle(self.redNode)
+    #   VoiceRecognitionLogic.parameters.append(self.redNode)
+    #   self.previous_command = self.toggle
+
+    # if(VoiceRecognitionLogic.toggle_yellow in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.toggle(self.yellowNode)
+    #   VoiceRecognitionLogic.parameters.append(self.yellowNode)
+    #   self.previous_command = self.toggle
+
+    # if(VoiceRecognitionLogic.toggle_green in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.toggle(self.greenNode)
+    #   VoiceRecognitionLogic.parameters.append(self.greenNode)
+    #   self.previous_command = self.toggle
+    
+    # if(VoiceRecognitionLogic.show_red in self.textLower): 
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.setLayout(self.layoutManager, 6)
+    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
+    #   VoiceRecognitionLogic.parameters.append(6)
+    #   self.previous_command = self.setLayout
+
+
+    # if(VoiceRecognitionLogic.show_yellow in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.setLayout(self.layoutManager, 7)
+    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
+    #   VoiceRecognitionLogic.parameters.append(7)
+    #   self.previous_command = self.setLayout
+
+
+    # if(VoiceRecognitionLogic.show_green in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.setLayout(self.layoutManager, 8)
+    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
+    #   VoiceRecognitionLogic.parameters.append(8)
+    #   self.previous_command = self.setLayout
+    # if(VoiceRecognitionLogic.offset_red in self.textLower):
+    #   for word in self.words: 
+    #     if(self.representsFloat(word)):
+    #       VoiceRecognitionLogic.parameters = []
+    #       self.manipulateSlice(self.redController, float(word))
+    #       VoiceRecognition.parameters.append(self.redController)
+    #       VoiceRecognitionLogic.parameters.append(float(word))
+    #       self.previous_command = self.manipulateSlice
+
+
+    # if(VoiceRecognitionLogic.offset_yellow in self.textLower):
+    #   for word in self.words: 
+    #     if(self.representsFloat(word)):
+    #       VoiceRecognitionLogic.parameters = []
+    #       self.manipulateSlice(self.yellowController, float(word))
+    #       VoiceRecognitionLogic.parameters.append(self.yellowController)
+    #       VoiceRecognitionLogic.parameters.append(float(word))
+    #       self.previous_command = self.manipulateSlice
+
+
+    # if(VoiceRecognitionLogic.offset_green in self.textLower):
+    #   for word in self.words: 
+    #     if(self.representsFloat(word)):
+    #       VoiceRecognitionLogic.parameters = []
+    #       self.manipulateSlice(self.greenController, float(word))
+    #       VoiceRecognitionLogic.parameters.append(self.greenController)
+    #       VoiceRecognitionLogic.parameters.append(float(word))
+    #       self.previous_command = self.manipulateSlice
