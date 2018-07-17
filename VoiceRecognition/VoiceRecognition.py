@@ -212,7 +212,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
 
     #self.textBox.setText(text)
-    self.logic.parse("screenshot")
+    self.logic.parse("roll 10")
 
 #
 # VoiceRecognitionLogic
@@ -318,9 +318,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     # TODO: try and implement dictionary with parameters 
     self.functionSwitcher = {"conventional" : self.conventional, "screenshot" : self.captureView, "save scene" : self.saveScene, "repeat" : self.repeat}
 
-
-
-    
 
 
   # condensed version of pitch, roll, yaw --> use later once speech recognition is more accurate 
@@ -465,6 +462,17 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       slicer.util.delayDisplay("Scene saving failed", 0)
 
 
+  def traversePitchYawRoll(self, word, function): 
+    if(word in self.textLower):
+        for secondWord in self.words: 
+          if(self.representsInt(secondWord)):
+            VoiceRecognitionLogic.parameters = []
+
+            function(self.threeDView, int(secondWord))
+            VoiceRecognitionLogic.parameters.append(self.threeDView)
+            VoiceRecognitionLogic.parameters.append(int(secondWord))
+            self.previous_command = function
+            break
 
 
 # ============================== END OF DICTIONARY METHOD =============================
@@ -588,40 +596,14 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     # ================ PITCH YAW ROLL ================
     # pitch using different words 
     for word in VoiceRecognitionLogic.pitch_terms:
-      if(word in self.textLower):
-        for secondWord in self.words: 
-          if(self.representsInt(secondWord)):
-            VoiceRecognitionLogic.parameters = []
-
-            self.pitch(self.threeDView, int(secondWord))
-            VoiceRecognitionLogic.parameters.append(self.threeDView)
-            VoiceRecognitionLogic.parameters.append(int(secondWord))
-            self.previous_command = self.pitch
-            break
-
+      self.traversePitchYawRoll(word, self.pitch)
+    
+    # yaw using different words 
     for word in VoiceRecognitionLogic.yaw_terms:
-      if(word in self.textLower):
-        for secondWord in self.words: 
-          if(self.representsInt(secondWord)):
-            VoiceRecognitionLogic.parameters = []
+      self.traversePitchYawRoll(word, self.yaw)
 
-            self.yaw(self.threeDView, int(secondWord))
+    self.traversePitchYawRoll("roll", self.roll)
 
-            VoiceRecognitionLogic.parameters.append(self.threeDView)
-            VoiceRecognitionLogic.parameters.append(int(secondWord))
-            self.previous_command = self.yaw
-            break 
-
-    if("roll" in self.textLower):
-      for secondWord in self.words: 
-        if(self.representsInt(secondWord)):
-          VoiceRecognitionLogic.parameters = []
-
-          self.roll(self.threeDView, int(secondWord))
-          VoiceRecognitionLogic.parameters.append(self.threeDView)
-          VoiceRecognitionLogic.parameters.append(int(secondWord))
-          self.previous_command = self.roll
-          break
 
 
   # listens to the audio and returns the speech api output 
