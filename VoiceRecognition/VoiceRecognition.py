@@ -206,12 +206,13 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
 
   def startLogic(self):
-    text = self.logic.interpreter(self.recognizer, self.microphone)
+    #text = self.logic.interpreter(self.recognizer, self.microphone)
+    
     # listens in the background 
     #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
 
-    self.textBox.setText(text)
-    self.logic.parse(text)
+    #self.textBox.setText(text)
+    self.logic.parse("hide yellow")
 
 #
 # VoiceRecognitionLogic
@@ -307,7 +308,14 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     # sets last function as the previous command 
     self.previous_command = self.pitch
 
-    self.path = ""
+    self.switcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView, "link" : self.linkRed, "unlink" : self.unlinkRed } ,
+                     "yellow" : {"show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView, "link" : self.linkYellow, "unlink" : self.unlinkYellow },
+                     "green" : {"show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView, "link" : self.linkGreen, "unlink" : self.unlinkGreen }
+      }
+
+
+
+    
 
 
   # condensed version of pitch, roll, yaw --> use later once speech recognition is more accurate 
@@ -361,15 +369,75 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   def setLayout(self, lm, layoutNumber):
     lm.setLayout(layoutNumber)
 
+
+# ============================== TRYING OUT DICTIONARY METHOD =============================
+  def redView(self): 
+    self.layoutManager.setLayout(6)
+
+  def yellowView(self): 
+    self.layoutManager.setLayout(7)
+
+  def greenView(self): 
+    self.layoutManager.setLayout(8)
+
+  def showRed(self): 
+    self.redNode.SetSliceVisible(1)
+
+  def showYellow(self): 
+    self.yellowNode.SetSliceVisible(1)
+
+  def showGreen(self): 
+    self.greenNode.SetSliceVisible(1)
+
+  def hideRed(self): 
+    self.redNode.SetSliceVisible(0)
+
+  def hideYellow(self): 
+    self.yellowNode.SetSliceVisible(0)
+
+  def hideGreen(self): 
+    self.greenNode.SetSliceVisible(0)
+
+  def linkRed(self): 
+    self.redCompositeNode.LinkedControlOn()
+
+  def linkYellow(self): 
+    self.yellowCompositeNode.LinkedControlOn()
+
+  def linkGreen(self): 
+    self.greenCompositeNode.LinkedControlOn()
+
+  def unlinkRed(self): 
+    self.redCompositeNode.LinkedControlOff()
+
+  def unlinkYellow(self): 
+    self.yellowCompositeNode.LinkedControlOff()
+
+  def unlinkGreen(self): 
+    self.greenCompositeNode.LinkedControlOff()
+
+# ============================== END OF DICTIONARY METHOD =============================
+
+  # toggle visibility 
   def toggle(self, node):
     node.SetSliceVisible(not node.GetSliceVisible())
 
+  # change view axis 
   def changeAxis(self, threeDView, viewNumber):
     threeDView.lookFromAxis(viewNumber)
 
+  # scroll through slice 
   def manipulateSlice(self, sliceController, offset):
     sliceController.setSliceOffsetValue(offset)
 
+
+  def link(self, compositeNode): 
+    compositeNode.LinkedControllOn()
+
+  def unlink(self, compositeNode): 
+    compositeNode.LinkedControlOff()
+
+  # link/unlink 
   def toggleLink(self, compositeNode):
     compositeNode.SetLinkedControl(not compositeNode.GetLinkedControl())
 
@@ -377,23 +445,65 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     id = random.randint(1111, 9999)
     self.cap.showViewControllers(False)
     print(id)
-    self.path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-    self.path += "\\" + str(id) + ".png"
+    path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+    path += "\\" + str(id) + ".png"
 
-    print(self.path)
-    self.cap.captureImageFromView(None, self.path)
+    print(path)
+    self.cap.captureImageFromView(None, path)
+    slicer.util.delayDisplay("Screenshot saved to " + path, 0)
+
     self.cap.showViewControllers(True)
+
+  def saveScene(self): 
+    sceneSaveDirectory = slicer.app.temporaryPath + "/saved-scene-" + time.strftime("%Y%m%d-%H%M%S")
+    if not os.access(sceneSaveDirectory, os.F_OK):
+      os.makedirs(sceneSaveDirectory)
+
+    # Save the scene
+    if slicer.app.applicationLogic().SaveSceneToSlicerDataBundleDirectory(sceneSaveDirectory, None):
+      slicer.util.delayDisplay("Scene saved to: {0}".format(sceneSaveDirectory), 0)
+      logging.info("Scene saved to: {0}".format(sceneSaveDirectory))
+    else:
+      logging.error("Scene saving failed") 
+      slicer.util.delayDisplay("Scene saving failed", 0)
+
+
 
   # input: takes speech-to-text and parses to execute commands 
   def parse(self, text):
     self.textLower = text.lower()
     self.words = text.split()
+    print(self.textLower)
     
 
     [word.lower() for word in self.words]
 
     # prase the words and execute commands 
     # TODO: put in more phrases/words in case speech recognition api thinks it's another word i.e. pitch and yaw 
+    functions = {}
+
+
+    # gets the functions for : show, hide, view, link, and unlink 
+    if("red" in self.textLower):
+      functions = self.switcher.get("red")
+      print(functions)
+
+    elif("yellow" in self.textLower): 
+      functions = self.switcher.get("yellow") 
+      print(functions)
+
+    elif("green" in self.textLower): 
+      functions = self.switcher.get("green") 
+      print(functions)
+
+    for key in functions: 
+      print(key)
+      if(key in self.textLower): 
+        print("key is in text")
+        self.previous_command = functions.get(key)
+        functions.get(key)()
+        break
+
 
     # ================ ZOOM ================
     if("zoom" in self.textLower):
@@ -414,42 +524,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       if("out" in self.textLower):
         self.zoomOut(self.threeDView, zoom_factor)
         self.previous_command = self.zoomOut
-
-    # ================ TOGGLE ================
-    if("toggle" in self.textLower):
-      VoiceRecognitionLogic.parameters = []
-      self.previous_command = self.toggle
-
-      if("red" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.redNode)
-        self.toggle(self.redNode)
-
-      if("yellow" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.yellowNode)
-        self.toggle(self.yellowNode)
-
-      if("green" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.greenNode)
-        self.toggle(self.greenNode)
-
-    # ================ SHOW ================
-    if("show" in self.textLower):
-      VoiceRecognitionLogic.parameters = []
-      self.previous_command = self.setLayout
-      VoiceRecognitionLogic.parameters.append(self.layoutManager)
-
-      if("red" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(6)        
-        self.setLayout(self.layoutManager, 6)
-
-      if("yellow" in self.textLower): 
-        VoiceRecognitionLogic.parameters.append(7)        
-        self.setLayout(self.layoutManager, 7)
-
-      if("green" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(8)        
-        self.setLayout(self.layoutManager, 8)
-
 
     # ================ OFFSET ================
     if("offset" in self.textLower):
@@ -477,22 +551,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       VoiceRecognitionLogic.parameters.append(offset)  
 
 
-    # ================ LINK/UNLINK ================
-    if("toggle link" in self.textLower):
-      VoiceRecognitionLogic.parameters = []
-      self.previous_command = self.toggleLink
-
-      if("red" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.redCompositeNode)
-        toggleLink(self.redCompositeNode)
-
-      if("yellow" in self.textLower): 
-        VoiceRecognitionLogic.parameters.append(self.yellowCompositeNode)
-        toggleLink(self.yellowCompositeNode)
-
-      if("green" in self.textLower): 
-        VoiceRecognitionLogic.parameters.append(self.greenCompositeNode)
-        toggleLink(self.greenCompositeNode)
+    
 
     # ================ CONVENTIONAL ================
 
@@ -555,8 +614,14 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     if("screenshot" in self.textLower):
       VoiceRecognitionLogic.parameters = []
       self.captureView()
-      slicer.util.delayDisplay("Screenshot saved to " + self.path, 0)
       self.previous_command = self.captureView
+
+    if("save scene" in self.textLower): 
+      VoiceRecognitionLogic.parameters = []
+      self.saveScene()
+      self.previous_command = self.saveScene
+
+
 
 
   # listens to the audio and returns the speech api output 
@@ -717,6 +782,59 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
 
 
 
+
+
+   # # ================ TOGGLE ================
+    # if("toggle" in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.previous_command = self.toggle
+
+    #   if("red" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(self.redNode)
+    #     self.toggle(self.redNode)
+
+    #   if("yellow" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(self.yellowNode)
+    #     self.toggle(self.yellowNode)
+
+    #   if("green" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(self.greenNode)
+    #     self.toggle(self.greenNode)
+
+    # ================ SHOW ================
+    # if("show" in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.previous_command = self.setLayout
+    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
+
+    #   if("red" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(6)        
+    #     self.setLayout(self.layoutManager, 6)
+
+    #   if("yellow" in self.textLower): 
+    #     VoiceRecognitionLogic.parameters.append(7)        
+    #     self.setLayout(self.layoutManager, 7)
+
+    #   if("green" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(8)        
+    #     self.setLayout(self.layoutManager, 8)
+
+    # ================ LINK/UNLINK ================
+    # if("toggle link" in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.previous_command = self.toggleLink
+
+    #   if("red" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(self.redCompositeNode)
+    #     toggleLink(self.redCompositeNode)
+
+    #   if("yellow" in self.textLower): 
+    #     VoiceRecognitionLogic.parameters.append(self.yellowCompositeNode)
+    #     toggleLink(self.yellowCompositeNode)
+
+    #   if("green" in self.textLower): 
+    #     VoiceRecognitionLogic.parameters.append(self.greenCompositeNode)
+    #     toggleLink(self.greenCompositeNode)
 
 
  # if(VoiceRecognitionLogic.toggle_red in self.textLower):
