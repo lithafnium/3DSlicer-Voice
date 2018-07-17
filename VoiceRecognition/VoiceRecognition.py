@@ -465,6 +465,8 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       slicer.util.delayDisplay("Scene saving failed", 0)
 
 
+
+
 # ============================== END OF DICTIONARY METHOD =============================
 
   # toggle visibility 
