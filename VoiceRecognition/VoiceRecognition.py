@@ -212,7 +212,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
 
     #self.textBox.setText(text)
-    self.logic.parse("hide yellow")
+    self.logic.parse("screenshot")
 
 #
 # VoiceRecognitionLogic
@@ -306,12 +306,17 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.cap = ScreenCapture.ScreenCaptureLogic() 
 
     # sets last function as the previous command 
-    self.previous_command = self.pitch
+    self.previous_command = self.conventional
 
-    self.switcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView, "link" : self.linkRed, "unlink" : self.unlinkRed } ,
+    # dictionary for functions that manipulate the red/yellow/green slices 
+    self.colorSwitcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView, "link" : self.linkRed, "unlink" : self.unlinkRed } ,
                      "yellow" : {"show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView, "link" : self.linkYellow, "unlink" : self.unlinkYellow },
                      "green" : {"show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView, "link" : self.linkGreen, "unlink" : self.unlinkGreen }
       }
+    # all other functions that don't have parameters
+
+    # TODO: try and implement dictionary with parameters 
+    self.functionSwitcher = {"conventional" : self.conventional, "screenshot" : self.captureView, "save scene" : self.saveScene, "repeat" : self.repeat}
 
 
 
@@ -416,30 +421,22 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   def unlinkGreen(self): 
     self.greenCompositeNode.LinkedControlOff()
 
-# ============================== END OF DICTIONARY METHOD =============================
+  def conventional(self): 
+    self.layoutManager.setLayout(2)
 
-  # toggle visibility 
-  def toggle(self, node):
-    node.SetSliceVisible(not node.GetSliceVisible())
+  def repeat(self): 
+    function = self.previous_command
+    try: 
+      if(len(VoiceRecognitionLogic.parameters) == 1):
+        function(VoiceRecognitionLogic.parameters[0])
+      if(len(VoiceRecognitionLogic.parameters) == 2):
+        function(VoiceRecognitionLogic.parameters[0], VoiceRecognitionLogic.parameters[1])
+      else: 
+        function()
+    except NameError: 
+      print("No previous command")
+      slicer.util.delayDisplay("No previous command to execute", 0)
 
-  # change view axis 
-  def changeAxis(self, threeDView, viewNumber):
-    threeDView.lookFromAxis(viewNumber)
-
-  # scroll through slice 
-  def manipulateSlice(self, sliceController, offset):
-    sliceController.setSliceOffsetValue(offset)
-
-
-  def link(self, compositeNode): 
-    compositeNode.LinkedControllOn()
-
-  def unlink(self, compositeNode): 
-    compositeNode.LinkedControlOff()
-
-  # link/unlink 
-  def toggleLink(self, compositeNode):
-    compositeNode.SetLinkedControl(not compositeNode.GetLinkedControl())
 
   def captureView(self):
     id = random.randint(1111, 9999)
@@ -468,6 +465,31 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       slicer.util.delayDisplay("Scene saving failed", 0)
 
 
+# ============================== END OF DICTIONARY METHOD =============================
+
+  # toggle visibility 
+  def toggle(self, node):
+    node.SetSliceVisible(not node.GetSliceVisible())
+
+  # change view axis 
+  def changeAxis(self, threeDView, viewNumber):
+    threeDView.lookFromAxis(viewNumber)
+
+  # scroll through slice 
+  def manipulateSlice(self, sliceController, offset):
+    sliceController.setSliceOffsetValue(offset)
+
+
+  def link(self, compositeNode): 
+    compositeNode.LinkedControllOn()
+
+  def unlink(self, compositeNode): 
+    compositeNode.LinkedControlOff()
+
+  # link/unlink 
+  def toggleLink(self, compositeNode):
+    compositeNode.SetLinkedControl(not compositeNode.GetLinkedControl())
+
 
   # input: takes speech-to-text and parses to execute commands 
   def parse(self, text):
@@ -485,15 +507,15 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
     # gets the functions for : show, hide, view, link, and unlink 
     if("red" in self.textLower):
-      functions = self.switcher.get("red")
+      functions = self.colorSwitcher.get("red")
       print(functions)
 
     elif("yellow" in self.textLower): 
-      functions = self.switcher.get("yellow") 
+      functions = self.colorSwitcher.get("yellow") 
       print(functions)
 
     elif("green" in self.textLower): 
-      functions = self.switcher.get("green") 
+      functions = self.colorSwitcher.get("green") 
       print(functions)
 
     for key in functions: 
@@ -504,6 +526,17 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         functions.get(key)()
         break
 
+    # gets functions without parameters 
+    for key in self.functionSwitcher: 
+      if(key in self.textLower): 
+        print(key) 
+
+        self.functionSwitcher.get(key)() 
+
+        if(key != "repeat"): 
+          print("NOT REPEAT")
+          self.previous_command = self.functionSwitcher.get(key)
+          print(self.previous_command) 
 
     # ================ ZOOM ================
     if("zoom" in self.textLower):
@@ -550,18 +583,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
       VoiceRecognitionLogic.parameters.append(offset)  
 
-
-    
-
-    # ================ CONVENTIONAL ================
-
-    if("conventional" in self.textLower):
-      VoiceRecognitionLogic.parameters = []
-      self.setLayout(self.layoutManager, 2)
-      VoiceRecognitionLogic.parameters.append(self.layoutManager)
-      VoiceRecognitionLogic.parameters.append(2)
-      self.previous_command = self.setLayout
-
     # ================ PITCH YAW ROLL ================
     # pitch using different words 
     for word in VoiceRecognitionLogic.pitch_terms:
@@ -599,29 +620,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
           VoiceRecognitionLogic.parameters.append(int(secondWord))
           self.previous_command = self.roll
           break
-
-    # ================ REPEAT ================
-    if("repeat" in self.textLower):
-      function = self.previous_command
-      if(len(VoiceRecognitionLogic.parameters) == 1):
-        function(VoiceRecognitionLogic.parameters[0])
-      if(len(VoiceRecognitionLogic.parameters) == 2):
-        function(VoiceRecognitionLogic.parameters[0], VoiceRecognitionLogic.parameters[1])
-
-
-
-    # ================ SCREENSHOT ================
-    if("screenshot" in self.textLower):
-      VoiceRecognitionLogic.parameters = []
-      self.captureView()
-      self.previous_command = self.captureView
-
-    if("save scene" in self.textLower): 
-      VoiceRecognitionLogic.parameters = []
-      self.saveScene()
-      self.previous_command = self.saveScene
-
-
 
 
   # listens to the audio and returns the speech api output 
@@ -778,10 +776,33 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
 
 
 
+    
+
+    # ================ CONVENTIONAL ================
+
+    # if("conventional" in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.setLayout(self.layoutManager, 2)
+    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
+    #   VoiceRecognitionLogic.parameters.append(2)
+    #   self.previous_command = self.setLayout
+
+ # ================ REPEAT ================
+    #if("repeat" in self.textLower):
+      
 
 
 
+    # ================ SCREENSHOT ================
+    # if("screenshot" in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.captureView()
+    #   self.previous_command = self.captureView
 
+    # if("save scene" in self.textLower): 
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.saveScene()
+    #   self.previous_command = self.saveScene
 
 
    # # ================ TOGGLE ================
