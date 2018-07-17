@@ -5,6 +5,9 @@ from slicer.ScriptedLoadableModule import *
 import logging
 import speech_recognition as sr
 import time 
+import ScreenCapture
+import random 
+import os
 
 #
 # VoiceRecognition
@@ -221,7 +224,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   """
 
   """
-      |
+      |                                                       |
       |  yaw
       |
       |
@@ -231,6 +234,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     / roll
    /
   /
+      
 
 
   Setting layout: 
@@ -298,8 +302,12 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.yellowCompositeNode = self.yellowLogic.GetSliceCompositeNode()
     self.greenCompositeNode = self.greenLogic.GetSliceCompositeNode()
 
+    self.cap = ScreenCapture.ScreenCaptureLogic() 
+
     # sets last function as the previous command 
     self.previous_command = self.pitch
+
+    self.path = ""
 
 
   # condensed version of pitch, roll, yaw --> use later once speech recognition is more accurate 
@@ -364,6 +372,17 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
   def toggleLink(self, compositeNode):
     compositeNode.SetLinkedControl(not compositeNode.GetLinkedControl())
+
+  def captureView(self):
+    id = random.randint(1111, 9999)
+    self.cap.showViewControllers(False)
+    print(id)
+    self.path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+    self.path += "\\" + str(id) + ".png"
+
+    print(self.path)
+    self.cap.captureImageFromView(None, self.path)
+    self.cap.showViewControllers(True)
 
   # input: takes speech-to-text and parses to execute commands 
   def parse(self, text):
@@ -530,6 +549,14 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       if(len(VoiceRecognitionLogic.parameters) == 2):
         function(VoiceRecognitionLogic.parameters[0], VoiceRecognitionLogic.parameters[1])
 
+
+
+    # ================ SCREENSHOT ================
+    if("screenshot" in self.textLower):
+      VoiceRecognitionLogic.parameters = []
+      self.captureView()
+      slicer.util.delayDisplay("Screenshot saved to " + self.path, 0)
+      self.previous_command = self.captureView
 
 
   # listens to the audio and returns the speech api output 
