@@ -562,8 +562,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.textLower = text.lower()
     self.words = text.split()
     #print(self.textLower)
-    
-
     [word.lower() for word in self.words]
 
     # prase the words and execute commands 
@@ -571,7 +569,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     functions = {}
 
 
-    # gets the functions for : show, hide, view, link, offset, and unlink 
+    # gets the functions for : show, hide, view, link, offset, and unlink (ones that work with the individual slices)
     if("red" in self.textLower):
       functions = self.colorSwitcher.get("red")
       print(functions)
@@ -592,7 +590,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         functions.get(key)()
         break
 
-    # gets the rest of the functions 
+    # gets the rest of the functions: conventional, captureview, save scene, screenshot, repeat, axis, zoom in/out 
     for key in self.functionSwitcher: 
       if(key in self.textLower): 
         print(key) 
