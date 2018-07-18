@@ -20,12 +20,12 @@ class VoiceRecognition(ScriptedLoadableModule):
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "VoiceRecognition" # TODO make this more human readable by adding spaces
-    self.parent.categories = ["Examples"]
+    self.parent.title = "Voice Recognition" # TODO make this more human readable by adding spaces
+    self.parent.categories = ["Utilities"]
     self.parent.dependencies = []
-    self.parent.contributors = ["Steve Li (BWH)"] # replace with "Firstname Lastname (Organization)"
+    self.parent.contributors = ["Steve Li (BU RISE)"] # replace with "Firstname Lastname (Organization)"
     self.parent.helpText = """
-Voice control module. 
+This module allows you to manipulate the slices and the 3D viewer using voice commands. 
 """
     self.parent.helpText += self.getDefaultModuleDocumentationLink()
     self.parent.acknowledgementText = """
@@ -202,12 +202,12 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
 
   def startLogic(self):
-    text = self.logic.interpreter(self.recognizer, self.microphone)
+    #text = self.logic.interpreter(self.recognizer, self.microphone)
     # listens in the background 
     #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
 
-    self.textBox.setText(text)
-    self.logic.parse(text)
+    #self.textBox.setText(text)
+    self.logic.parse("posterior")
 
 #
 # VoiceRecognitionLogic
@@ -319,7 +319,11 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     # all other functions that don't have parameters
 
     # TODO: try and implement dictionary with parameters 
-    self.functionSwitcher = {"conventional" : self.conventional, "screenshot" : self.captureView, "save scene" : self.saveScene, "repeat" : self.repeat}
+    self.functionSwitcher = {"conventional" : self.conventional, "screenshot" : self.captureView, "save scene" : self.saveScene, "repeat" : self.repeat,
+                            "right" : self.rightAxis, "left" : self.leftAxis, "superior" : self.superiorAxis, "inferior" : self.inferiorAxis, 
+                            "anterior" : self.anteriorAxis, "posterior" : self.posteriorAxis, "reset axis" : self.resetFocalPoint
+
+    }
 
 
 
@@ -423,6 +427,33 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
   def conventional(self): 
     self.layoutManager.setLayout(2)
+
+
+  # def changeAxis(self, threeDView, viewNumber):
+  #   threeDView.lookFromAxis(viewNumber)
+
+  def resetFocalPoint(self): 
+    self.threeDView.resetFocalPoint()
+
+  def rightAxis(self): 
+    self.threeDView.lookFromAxis(1)
+
+  def leftAxis(self): 
+    self.threeDView.lookFromAxis(2)
+
+  def superiorAxis(self): 
+    self.threeDView.lookFromAxis(3)
+
+  def inferiorAxis(self): 
+    self.threeDView.lookFromAxis(4)
+
+  def anteriorAxis(self): 
+    self.threeDView.lookFromAxis(5)
+
+  def posteriorAxis(self): 
+    self.threeDView.lookFromAxis(6)
+
+
 
   def repeat(self): 
     function = self.previous_command
