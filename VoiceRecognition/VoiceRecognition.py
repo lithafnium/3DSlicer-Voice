@@ -207,7 +207,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
 
     #self.textBox.setText(text)
-    self.logic.parse("posterior")
+    self.logic.parse("zoom out 0.8")
 
 #
 # VoiceRecognitionLogic
@@ -312,32 +312,21 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.previous_command = self.conventional
 
     # dictionary for functions that manipulate the red/yellow/green slices 
-    self.colorSwitcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView, "link" : self.linkRed, "unlink" : self.unlinkRed } ,
-                     "yellow" : {"show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView, "link" : self.linkYellow, "unlink" : self.unlinkYellow },
-                     "green" : {"show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView, "link" : self.linkGreen, "unlink" : self.unlinkGreen }
-      }
+    self.colorSwitcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView, "link" : self.linkRed, "unlink" : self.unlinkRed, "offset" : self.manipulateRed} ,
+                     "yellow" : {"show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView, "link" : self.linkYellow, "unlink" : self.unlinkYellow, "offset" : self.manipulateYellow},
+                     "green" : {"show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView, "link" : self.linkGreen, "unlink" : self.unlinkGreen, "offset" : self.manipulateGreen }
+    }
     # all other functions that don't have parameters
 
     # TODO: try and implement dictionary with parameters 
     self.functionSwitcher = {"conventional" : self.conventional, "screenshot" : self.captureView, "save scene" : self.saveScene, "repeat" : self.repeat,
                             "right" : self.rightAxis, "left" : self.leftAxis, "superior" : self.superiorAxis, "inferior" : self.inferiorAxis, 
-                            "anterior" : self.anteriorAxis, "posterior" : self.posteriorAxis, "reset axis" : self.resetFocalPoint
+                            "anterior" : self.anteriorAxis, "posterior" : self.posteriorAxis, "reset axis" : self.resetFocalPoint,
+                            "zoom in" : self.zoomIn, "zoom out" : self.zoomOut
 
     }
-
-
-
-  # condensed version of pitch, roll, yaw --> use later once speech recognition is more accurate 
-  # def manipulate3DView(self, word, threeDView, increment):
-  #   threeDView.setPitchRollYawIncrement(increment)
-  #   if(word == "pitch"): 
-  #     thereDView.pitch()
-
-  #   if(word == "yaw"):
-  #     threeDView.yaw()
-
-  #   if(word == "roll"):
-  #     threeDView.roll()
+    self.sliceOffset = 10
+    self.zoom_factor = 0.5
 
   def pitch(self, threeDView, increment):
     threeDView.setPitchRollYawIncrement(increment)
@@ -367,19 +356,32 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     except ValueError:
       return False
 
-  def zoomIn(self, threeDView, increment):
-    threeDView.setZoomFactor(increment)
-    threeDView.zoomIn()
-
-  def zoomOut(self, threeDView, increment): 
-    threeDView.setZoomFactor(increment)
-    threeDView.zoomOut()
-
   def setLayout(self, lm, layoutNumber):
     lm.setLayout(layoutNumber)
 
 
 # ============================== TRYING OUT DICTIONARY METHOD =============================
+
+  def zoomHelper(self): 
+    for word in self.words:
+      if(self.representsFloat(word)):
+        self.zoom_factor = float(word)
+        break
+
+
+  def zoomIn(self): 
+    self.zoomHelper()
+    self.threeDView.setZoomFactor(self.zoom_factor)
+    self.threeDView.zoomIn()
+    self.previous_command = self.zoomIn
+  
+  def zoomOut(self): 
+    self.zoomHelper()
+    self.threeDView.setZoomFactor(self.zoom_factor)
+    self.threeDView.zoomOut()
+    self.previous_command = self.zoomOut
+
+
   def redView(self): 
     self.layoutManager.setLayout(6)
 
@@ -454,7 +456,37 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.threeDView.lookFromAxis(6)
 
 
+  # def manipulateSlice(self, sliceController, offset):
+  #   sliceController.setSliceOffsetValue(offset)
 
+  def manipulateSliceHelper(self, sliceController):
+    VoiceRecognitionLogic.parameters = []
+
+    for word in self.words: 
+      if(self.representsFloat(word)):
+        self.offset = float(word)
+        break
+
+    sliceController.setSliceOffsetValue(self.offset)
+
+  def manipulateRed(self): 
+    self.previous_command = self.manipulateRed
+
+    self.manipulateSliceHelper(self.redController)
+
+  def manipulateYellow(self): 
+    self.previous_command = self.manipulateYellow
+
+    self.manipulateSliceHelper(self.yellowController)
+
+  def manipulateGreen(self): 
+    self.previous_command = self.manipulateGreen
+
+    self.manipulateSliceHelper(self.greenController)
+
+
+    
+  # repeats the previosu command 
   def repeat(self): 
     function = self.previous_command
     try: 
@@ -468,7 +500,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       print("No previous command")
       slicer.util.delayDisplay("No previous command to execute", 0)
 
-
+  # takes a screen shot of the views 
   def captureView(self):
     id = random.randint(1111, 9999)
     self.cap.showViewControllers(False)
@@ -482,6 +514,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
     self.cap.showViewControllers(True)
 
+  # saves the scene 
   def saveScene(self): 
     sceneSaveDirectory = slicer.app.temporaryPath + "/saved-scene-" + time.strftime("%Y%m%d-%H%M%S")
     if not os.access(sceneSaveDirectory, os.F_OK):
@@ -563,9 +596,9 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       print(functions)
 
     for key in functions: 
-      print(key)
+      #print(key)
       if(key in self.textLower): 
-        print("key is in text")
+        #print("key is in text")
         self.previous_command = functions.get(key)
         functions.get(key)()
         break
@@ -581,51 +614,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
           print("NOT REPEAT")
           self.previous_command = self.functionSwitcher.get(key)
           print(self.previous_command) 
-
-    # ================ ZOOM ================
-    if("zoom" in self.textLower):
-      zoom_factor = 0.5
-      VoiceRecognitionLogic.parameters = []
-
-      for word in self.words:
-        if(self.representsFloat(word)):
-          zoom_factor = float(word)
-          break
-
-      VoiceRecognitionLogic.parameters.append(self.threeDView)
-      VoiceRecognitionLogic.parameters.append(zoom_factor)
-      if("in" in self.textLower):
-        self.zoomIn(self.threeDView, zoom_factor)
-        self.previous_command = self.zoomIn
-
-      if("out" in self.textLower):
-        self.zoomOut(self.threeDView, zoom_factor)
-        self.previous_command = self.zoomOut
-
-    # ================ OFFSET ================
-    if("offset" in self.textLower):
-      VoiceRecognitionLogic.parameters = []
-      self.previous_command = self.manipulateSlice
-      offset = 0.4
-
-      for word in self.words: 
-        if(self.representsFloat(word)):
-          offset = float(word)
-          break
-
-      if("red" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.redController)
-        self.manipulateSlice(self.redController, offset)
-
-      if("yellow" in self.textLower): 
-        VoiceRecognitionLogic.parameters.append(self.yellowController)
-        self.manipulateSlice(self.yellowController, offset)
-
-      if("green" in self.textLower):
-        VoiceRecognitionLogic.parameters.append(self.greenController)
-        self.manipulateSlice(self.greenController, offset)
-
-      VoiceRecognitionLogic.parameters.append(offset)  
 
     # ================ PITCH YAW ROLL ================
     # pitch using different words 
@@ -792,9 +780,51 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
 
 
 
+    # ================ ZOOM ================
+    # if("zoom" in self.textLower):
+    #   zoom_factor = 0.5
+    #   VoiceRecognitionLogic.parameters = []
+
+    #   for word in self.words:
+    #     if(self.representsFloat(word)):
+    #       zoom_factor = float(word)
+    #       break
+
+    #   VoiceRecognitionLogic.parameters.append(self.threeDView)
+    #   VoiceRecognitionLogic.parameters.append(zoom_factor)
+    #   if("in" in self.textLower):
+    #     self.zoomIn(self.threeDView, zoom_factor)
+    #     self.previous_command = self.zoomIn
+
+    #   if("out" in self.textLower):
+    #     self.zoomOut(self.threeDView, zoom_factor)
+    #     self.previous_command = self.zoomOut
 
     
+ # ================ OFFSET ================
+    # if("offset" in self.textLower):
+    #   VoiceRecognitionLogic.parameters = []
+    #   self.previous_command = self.manipulateSlice
+    #   offset = 0.4
 
+    #   for word in self.words: 
+    #     if(self.representsFloat(word)):
+    #       offset = float(word)
+    #       break
+
+    #   if("red" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(self.redController)
+    #     self.manipulateSlice(self.redController, offset)
+
+    #   if("yellow" in self.textLower): 
+    #     VoiceRecognitionLogic.parameters.append(self.yellowController)
+    #     self.manipulateSlice(self.yellowController, offset)
+
+    #   if("green" in self.textLower):
+    #     VoiceRecognitionLogic.parameters.append(self.greenController)
+    #     self.manipulateSlice(self.greenController, offset)
+
+    #   VoiceRecognitionLogic.parameters.append(offset)  
     # ================ CONVENTIONAL ================
 
     # if("conventional" in self.textLower):
