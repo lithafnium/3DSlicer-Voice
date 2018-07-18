@@ -43,6 +43,15 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
+    
+    #Initializes recognizer and microphone 
+    self.recognizer = sr.Recognizer()
+    try: 
+      self.microphone = sr.Microphone()
+
+    except(IOError):
+      print("ERROR: No default microphone. Check if microphone is plugged in or if you have a default microphone set in your sound settings.")
+      self.errors.setText("ERROR: No default microphone. Check if your microphone is plugged in or if you have a default microphone set in your sound settings.")
 
 
     # Initializes layout manager: 
@@ -76,9 +85,9 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.energyLevelThreshold.setDisabled(True)
     self.energyLevelThreshold.minimum = 0
     self.energyLevelThreshold.maximum = 5000
-    self.energyLevelThreshold.value = 300
+    self.energyLevelThreshold.value = self.recognizer.energy_threshold
     self.energyLevelThreshold.tracking = False
-    self.energyLevelThreshold.setToolTip("Sets the threshold value for sounds. Value below this threshold is considered silence. Silent rooms are from 0-100, values for speaking 150-3500. Adjust if necessary. Uncheck the box to enable")
+    self.energyLevelThreshold.setToolTip("Sets the threshold value for sounds. Value below this threshold is considered silence. Silent rooms are from 0-100, values for speaking 150-3500. Louder rooms are 3500 and above. Adjust if necessary. Uncheck the box to enable")
     
     parametersFormLayout.addRow("Sound Energy Threshold: ", self.energyLevelThreshold)
 
@@ -87,7 +96,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     self.dynamicEnergyThreshold = qt.QCheckBox()
     self.dynamicEnergyThreshold.checked = 1
-    self.dynamicEnergyThreshold.setToolTip("Check if the ambient noise in the room is not controlled, i.e. in a noisy room ")
+    self.dynamicEnergyThreshold.setToolTip("Check the box if the ambient noise in the room is not controlled, i.e. in a noisy room ")
     parametersFormLayout.addRow("Enable Dynamic Energy Threshold: ", self.dynamicEnergyThreshold)
 
     #
@@ -128,16 +137,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     # Refresh Apply button state
     self.onSelect()
-
-    #Initializes recognizer and microphone 
-    self.recognizer = sr.Recognizer()
-    try: 
-      self.microphone = sr.Microphone()
-
-    except(IOError):
-      print("ERROR: No default microphone. Check if microphone is plugged in or if you have a default microphone set in your sound settings.")
-      self.errors.setText("ERROR: No default microphone. Check if your microphone is plugged in or if you have a default microphone set in your sound settings.")
-
     
   def cleanup(self):
     pass
@@ -149,7 +148,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   
   # logic when threshold is changed 
   def threshold_changed(self):
-    print(self.energyLevelThreshold.value)
+    
     self.recognizer.energy_threshold = self.energyLevelThreshold.value
 
   
@@ -306,6 +305,8 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.yellowCompositeNode = self.yellowLogic.GetSliceCompositeNode()
     self.greenCompositeNode = self.greenLogic.GetSliceCompositeNode()
 
+
+    # logic for taking a screenshot 
     self.cap = ScreenCapture.ScreenCaptureLogic() 
 
     # sets last function as the previous command 
@@ -430,10 +431,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   def conventional(self): 
     self.layoutManager.setLayout(2)
 
-
-  # def changeAxis(self, threeDView, viewNumber):
-  #   threeDView.lookFromAxis(viewNumber)
-
   def resetFocalPoint(self): 
     self.threeDView.resetFocalPoint()
 
@@ -455,13 +452,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   def posteriorAxis(self): 
     self.threeDView.lookFromAxis(6)
 
-
-  # def manipulateSlice(self, sliceController, offset):
-  #   sliceController.setSliceOffsetValue(offset)
-
   def manipulateSliceHelper(self, sliceController):
-    VoiceRecognitionLogic.parameters = []
-
     for word in self.words: 
       if(self.representsFloat(word)):
         self.offset = float(word)
@@ -484,9 +475,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
 
     self.manipulateSliceHelper(self.greenController)
 
-
-    
-  # repeats the previosu command 
+  # repeats the previous command 
   def repeat(self): 
     function = self.previous_command
     try: 
@@ -528,7 +517,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
       logging.error("Scene saving failed") 
       slicer.util.delayDisplay("Scene saving failed", 0)
 
-
+  # pitch yaw and roll 
   def traversePitchYawRoll(self, word, function): 
     if(word in self.textLower):
         for secondWord in self.words: 
@@ -582,7 +571,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     functions = {}
 
 
-    # gets the functions for : show, hide, view, link, and unlink 
+    # gets the functions for : show, hide, view, link, offset, and unlink 
     if("red" in self.textLower):
       functions = self.colorSwitcher.get("red")
       print(functions)
@@ -603,7 +592,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         functions.get(key)()
         break
 
-    # gets functions without parameters 
+    # gets the rest of the functions 
     for key in self.functionSwitcher: 
       if(key in self.textLower): 
         print(key) 
@@ -777,199 +766,3 @@ class VoiceRecognitionTest(ScriptedLoadableModuleTest):
     # self.assertIsNotNone( logic.hasImageData(volumeNode) )
     self.delayDisplay('Test passed!')
 
-
-
-
-    # ================ ZOOM ================
-    # if("zoom" in self.textLower):
-    #   zoom_factor = 0.5
-    #   VoiceRecognitionLogic.parameters = []
-
-    #   for word in self.words:
-    #     if(self.representsFloat(word)):
-    #       zoom_factor = float(word)
-    #       break
-
-    #   VoiceRecognitionLogic.parameters.append(self.threeDView)
-    #   VoiceRecognitionLogic.parameters.append(zoom_factor)
-    #   if("in" in self.textLower):
-    #     self.zoomIn(self.threeDView, zoom_factor)
-    #     self.previous_command = self.zoomIn
-
-    #   if("out" in self.textLower):
-    #     self.zoomOut(self.threeDView, zoom_factor)
-    #     self.previous_command = self.zoomOut
-
-    
- # ================ OFFSET ================
-    # if("offset" in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.previous_command = self.manipulateSlice
-    #   offset = 0.4
-
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       offset = float(word)
-    #       break
-
-    #   if("red" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(self.redController)
-    #     self.manipulateSlice(self.redController, offset)
-
-    #   if("yellow" in self.textLower): 
-    #     VoiceRecognitionLogic.parameters.append(self.yellowController)
-    #     self.manipulateSlice(self.yellowController, offset)
-
-    #   if("green" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(self.greenController)
-    #     self.manipulateSlice(self.greenController, offset)
-
-    #   VoiceRecognitionLogic.parameters.append(offset)  
-    # ================ CONVENTIONAL ================
-
-    # if("conventional" in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.setLayout(self.layoutManager, 2)
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-    #   VoiceRecognitionLogic.parameters.append(2)
-    #   self.previous_command = self.setLayout
-
- # ================ REPEAT ================
-    #if("repeat" in self.textLower):
-      
-
-
-
-    # ================ SCREENSHOT ================
-    # if("screenshot" in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.captureView()
-    #   self.previous_command = self.captureView
-
-    # if("save scene" in self.textLower): 
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.saveScene()
-    #   self.previous_command = self.saveScene
-
-
-   # # ================ TOGGLE ================
-    # if("toggle" in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.previous_command = self.toggle
-
-    #   if("red" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(self.redNode)
-    #     self.toggle(self.redNode)
-
-    #   if("yellow" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(self.yellowNode)
-    #     self.toggle(self.yellowNode)
-
-    #   if("green" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(self.greenNode)
-    #     self.toggle(self.greenNode)
-
-    # ================ SHOW ================
-    # if("show" in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.previous_command = self.setLayout
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-
-    #   if("red" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(6)        
-    #     self.setLayout(self.layoutManager, 6)
-
-    #   if("yellow" in self.textLower): 
-    #     VoiceRecognitionLogic.parameters.append(7)        
-    #     self.setLayout(self.layoutManager, 7)
-
-    #   if("green" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(8)        
-    #     self.setLayout(self.layoutManager, 8)
-
-    # ================ LINK/UNLINK ================
-    # if("toggle link" in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.previous_command = self.toggleLink
-
-    #   if("red" in self.textLower):
-    #     VoiceRecognitionLogic.parameters.append(self.redCompositeNode)
-    #     toggleLink(self.redCompositeNode)
-
-    #   if("yellow" in self.textLower): 
-    #     VoiceRecognitionLogic.parameters.append(self.yellowCompositeNode)
-    #     toggleLink(self.yellowCompositeNode)
-
-    #   if("green" in self.textLower): 
-    #     VoiceRecognitionLogic.parameters.append(self.greenCompositeNode)
-    #     toggleLink(self.greenCompositeNode)
-
-
- # if(VoiceRecognitionLogic.toggle_red in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.toggle(self.redNode)
-    #   VoiceRecognitionLogic.parameters.append(self.redNode)
-    #   self.previous_command = self.toggle
-
-    # if(VoiceRecognitionLogic.toggle_yellow in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.toggle(self.yellowNode)
-    #   VoiceRecognitionLogic.parameters.append(self.yellowNode)
-    #   self.previous_command = self.toggle
-
-    # if(VoiceRecognitionLogic.toggle_green in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.toggle(self.greenNode)
-    #   VoiceRecognitionLogic.parameters.append(self.greenNode)
-    #   self.previous_command = self.toggle
-    
-    # if(VoiceRecognitionLogic.show_red in self.textLower): 
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.setLayout(self.layoutManager, 6)
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-    #   VoiceRecognitionLogic.parameters.append(6)
-    #   self.previous_command = self.setLayout
-
-
-    # if(VoiceRecognitionLogic.show_yellow in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.setLayout(self.layoutManager, 7)
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-    #   VoiceRecognitionLogic.parameters.append(7)
-    #   self.previous_command = self.setLayout
-
-
-    # if(VoiceRecognitionLogic.show_green in self.textLower):
-    #   VoiceRecognitionLogic.parameters = []
-    #   self.setLayout(self.layoutManager, 8)
-    #   VoiceRecognitionLogic.parameters.append(self.layoutManager)
-    #   VoiceRecognitionLogic.parameters.append(8)
-    #   self.previous_command = self.setLayout
-    # if(VoiceRecognitionLogic.offset_red in self.textLower):
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       VoiceRecognitionLogic.parameters = []
-    #       self.manipulateSlice(self.redController, float(word))
-    #       VoiceRecognition.parameters.append(self.redController)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.manipulateSlice
-
-
-    # if(VoiceRecognitionLogic.offset_yellow in self.textLower):
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       VoiceRecognitionLogic.parameters = []
-    #       self.manipulateSlice(self.yellowController, float(word))
-    #       VoiceRecognitionLogic.parameters.append(self.yellowController)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.manipulateSlice
-
-
-    # if(VoiceRecognitionLogic.offset_green in self.textLower):
-    #   for word in self.words: 
-    #     if(self.representsFloat(word)):
-    #       VoiceRecognitionLogic.parameters = []
-    #       self.manipulateSlice(self.greenController, float(word))
-    #       VoiceRecognitionLogic.parameters.append(self.greenController)
-    #       VoiceRecognitionLogic.parameters.append(float(word))
-    #       self.previous_command = self.manipulateSlice
