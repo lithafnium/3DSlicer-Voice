@@ -71,12 +71,14 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     # Sound energy level threshold value
     self.energyLevelThreshold = ctk.ctkSliderWidget()
+    #self.energyLevelThreshold.disable = True
     self.energyLevelThreshold.singleStep = 1 
+    self.energyLevelThreshold.setDisabled(True)
     self.energyLevelThreshold.minimum = 0
     self.energyLevelThreshold.maximum = 5000
     self.energyLevelThreshold.value = 300
     self.energyLevelThreshold.tracking = False
-    self.energyLevelThreshold.setToolTip("Sets the threshold value for sounds. Value below this threshold is considered silence. Silent rooms are from 0-100, values for speaking 150-3500. Adjust if necessary")
+    self.energyLevelThreshold.setToolTip("Sets the threshold value for sounds. Value below this threshold is considered silence. Silent rooms are from 0-100, values for speaking 150-3500. Adjust if necessary. Uncheck the box to enable")
     
     parametersFormLayout.addRow("Sound Energy Threshold: ", self.energyLevelThreshold)
 
@@ -167,6 +169,10 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   
   def dynamicThreshold(self):
     print(self.dynamicEnergyThreshold.checked)
+
+    # setDisabled(True) = slider is disabled 
+    self.energyLevelThreshold.setDisabled(self.dynamicEnergyThreshold.checked)
+
     self.recognizer.dynamic_energy_threshold = self.dynamicEnergyThreshold.checked
 
   
@@ -174,21 +180,11 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.logic.parse("repeat")
 
   
-  def callback(self, recognizer, audio):
-    try: 
-      print(recognizer.recognize_google(audio))
-    # handles any api/voice errors  errors 
-    except sr.RequestError: 
-      print( "There was an issue in handling the request, please try again")
-    except sr.UnknownValueError:
-      print("Unable to Recognize speech")
-
-  
   def onApplyButton(self):
     #self.displayLabel.setText("Listening for speech....")
-    slicer.util.delayDisplay("Wait...", 2000)
+    slicer.util.delayDisplay("Wait...", 2250)
 
-    # TODO: Background listening stuff --> not working will try once I get a reponse 
+    # TODO: Background listening stuff --> not working will try once I get a response 
     # self.recognizer = sr.Recognizer()
     # try: 
     #   self.microphone = sr.Microphone()
@@ -206,17 +202,24 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
 
   def startLogic(self):
-    #text = self.logic.interpreter(self.recognizer, self.microphone)
-    
+    text = self.logic.interpreter(self.recognizer, self.microphone)
     # listens in the background 
     #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
 
-    #self.textBox.setText(text)
-    self.logic.parse("roll 10")
+    self.textBox.setText(text)
+    self.logic.parse(text)
 
 #
 # VoiceRecognitionLogic
 #
+# def callback(self, recognizer, audio):
+#     try: 
+#       print(recognizer.recognize_google(audio))
+#     # handles any api/voice errors  errors 
+#     except sr.RequestError: 
+#       print( "There was an issue in handling the request, please try again")
+#     except sr.UnknownValueError:
+#       print("Unable to Recognize speech")
 
 class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   """
@@ -505,7 +508,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   def parse(self, text):
     self.textLower = text.lower()
     self.words = text.split()
-    print(self.textLower)
+    #print(self.textLower)
     
 
     [word.lower() for word in self.words]
@@ -605,7 +608,6 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     self.traversePitchYawRoll("roll", self.roll)
 
 
-
   # listens to the audio and returns the speech api output 
   def interpreter(self, recognizer, microphone):
     # maybe move to testing 
@@ -618,7 +620,7 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     with microphone as source:
       recognizer.adjust_for_ambient_noise(source)
       audio = recognizer.listen(source)
-    
+    #stop_listening = recognizer.listen_in_background(microphone, callback)
     try: 
       print(recognizer.recognize_google(audio))
       #self.parse(recognizer.recognize_google())
