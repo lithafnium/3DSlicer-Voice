@@ -201,17 +201,18 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
 
   def startLogic(self):
-    #text = self.logic.interpreter(self.recognizer, self.microphone)
+    text = self.logic.interpreter(self.recognizer, self.microphone)
     # listens in the background 
-    #stop_listening = r.listen_in_background(self.microphone, logic.interpreter)
+    #self.logic.interpreter(self.recognizer, self.microphone) 
 
-    #self.textBox.setText(text)
-    self.logic.parse("zoom out 0.8")
+
+    self.textBox.setText(text)
+    self.logic.parse(text)
 
 #
 # VoiceRecognitionLogic
 #
-# def callback(self, recognizer, audio):
+# def callback(recognizer, audio):
 #     try: 
 #       print(recognizer.recognize_google(audio))
 #     # handles any api/voice errors  errors 
@@ -588,6 +589,8 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         #print("key is in text")
         self.previous_command = functions.get(key)
         functions.get(key)()
+        VoiceRecognitionLogic.parameters = []
+
         break
 
     # gets the rest of the functions: conventional, captureview, save scene, screenshot, repeat, axis, zoom in/out 
@@ -596,6 +599,8 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
         print(key) 
 
         self.functionSwitcher.get(key)() 
+        VoiceRecognitionLogic.parameters = []
+
 
         if(key != "repeat"): 
           print("NOT REPEAT")
