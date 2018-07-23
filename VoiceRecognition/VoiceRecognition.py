@@ -273,7 +273,34 @@ class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
     3 - superior 
     4 - inferior 
     5 - anterior 
-    6 - posterior             
+    6 - posterior
+
+
+COMMANDS: 
+
+Red/yellow/geren: 
+  1. Show/hide [color] --> shows and hides the slices from the
+     3DViewer 
+  2. view [color] --> switches to the [color] view of the screen 
+  3. link/unlink [color] --> links/unlinks individual slices 
+  4. offset [color] [x] --> moves the slice to a desired offset value 
+     [x] (in mm)
+
+
+Other commands: 
+  1. "Conventional" --> switches to conventional view 
+  2. "screenshot" --> takes a screenshot of the layout 
+  3. "save scene" --> saves the scene 
+  4. "repeat" --> repeats the last given command 
+  5. "right" --> view from right axis 
+  6. "left" --> view from left axis 
+  7. "superior" --> view from superior axis 
+  8. "inferior" --> view from inferior axis 
+  9. "anterior" --> view from anterior axis 
+  10. "posterior" --> view from posterior axis 
+  11. "zoom in [x]" or "zoom out [x]" --> zooms in or out where [x] is 
+      the zoom factor, a value from 0 to 1.0  
+  12. "pitch", "roll", "yaw" + [x] --> rotates 3D Viewer by [x] degrees             
   """
   # Parameters array is used to store function parameters when user asks to repaet a function 
   parameters = []
