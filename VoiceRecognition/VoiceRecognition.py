@@ -114,6 +114,14 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.repeatButton.enabled = True
     parametersFormLayout.addRow(self.repeatButton)
 
+    #
+    # Stop Button
+    #
+    self.stopButton = qt.QPushButton("Stop Listneing")
+    self.stopButton.toolTip = "Stops listening."
+    self.stopButton.enabled = True
+    parametersFormLayout.addRow(self.stopButton)
+
     # speech to text label 
     self.textBox = qt.QLabel(" ")
     self.textBox.toolTip = "User input"
@@ -128,10 +136,12 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
     # connections
     self.applyButton.connect('clicked(bool)', self.onApplyButton)
+    self.stopButton.connect('clicked(bool)', self.onStopButton)
     self.repeatButton.connect('clicked(bool)', self.onRepeatButton)
     self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
     self.energyLevelThreshold.valueChanged.connect(self.threshold_changed)
     self.dynamicEnergyThreshold.clicked.connect(self.dynamicThreshold)
+
 
     # Add vertical spacer
     self.layout.addStretch(1)
@@ -177,6 +187,9 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   
   def onRepeatButton(self):
     self.logic.parse("repeat")
+
+  def onStopButton(self): 
+    self.logic.stop = True 
 
   
   def onApplyButton(self):
@@ -289,6 +302,7 @@ Other commands:
 
   # constructor, initializes everything
   def __init__(self, layoutManager):
+    self.stop = True
     self.layoutManager = layoutManager
     self.threeDView = layoutManager.threeDWidget(0).threeDView()
 
@@ -638,18 +652,21 @@ Other commands:
 
   # listens to the audio and returns the speech api output 
   def interpreter(self, recognizer, microphone):
-    print(current_thread())
-    # maybe move to testing 
-    if not isinstance(recognizer, sr.Recognizer):
-      raise TypeError("recognizer must be Recognizer instance")
+    # print(current_thread())
+    # # maybe move to testing 
+    # if not isinstance(recognizer, sr.Recognizer):
+    #   raise TypeError("recognizer must be Recognizer instance")
 
-    if not isinstance(microphone, sr.Microphone):
-      raise TypeError("microphone must be Mcirophone instance")
+    # if not isinstance(microphone, sr.Microphone):
+    #   raise TypeError("microphone must be Mcirophone instance")
 
     with microphone as source:
+    
       recognizer.adjust_for_ambient_noise(source)
       audio = recognizer.listen(source)
-    #stop_listening = recognizer.listen_in_background(microphone, self.callback)
+
+
+    # #stop_listening = recognizer.listen_in_background(microphone, self.callback)
     try: 
       print(recognizer.recognize_google(audio))
       #self.parse(recognizer.recognize_google())
