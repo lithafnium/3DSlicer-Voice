@@ -8,6 +8,7 @@ import time
 import ScreenCapture
 import random 
 import os
+from threading import Thread, current_thread
 
 #
 # VoiceRecognition
@@ -144,7 +145,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   
   def onSelect(self):
     print(5)
-
   
   # logic when threshold is changed 
   def threshold_changed(self):
@@ -184,19 +184,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     slicer.util.delayDisplay("Wait...", 2250)
 
     # TODO: Background listening stuff --> not working will try once I get a response 
-    # self.recognizer = sr.Recognizer()
-    # try: 
-    #   self.microphone = sr.Microphone()
-
-    # except(IOError):
-    #   print("ERROR: No default microphone. Check if microphone is plugged in or if you have a default microphone set in your sound settings.")
-    #   self.errors.setText("ERROR: No default microphone. Check if your microphone is plugged in or if you have a default microphone set in your sound settings.")
-
-    # with self.microphone as source:
-    #   self.recognizer.adjust_for_ambient_noise(source)
-
-    # stop_listening = self.recognizer.listen_in_background(self.microphone, self.callback)
-
     self.startLogic()
 
 
@@ -212,14 +199,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 #
 # VoiceRecognitionLogic
 #
-# def callback(recognizer, audio):
-#     try: 
-#       print(recognizer.recognize_google(audio))
-#     # handles any api/voice errors  errors 
-#     except sr.RequestError: 
-#       print( "There was an issue in handling the request, please try again")
-#     except sr.UnknownValueError:
-#       print("Unable to Recognize speech")
 
 class VoiceRecognitionLogic(ScriptedLoadableModuleLogic):
   """
@@ -645,9 +624,21 @@ Other commands:
 
     self.traversePitchYawRoll("roll", self.roll)
 
+  def callback(self, recognizer, audio):
+    print(current_thread())
+    try: 
+      print(recognizer.recognize_google(audio))
+    # handles any api/voice errors  errors 
+    except sr.RequestError: 
+      print( "There was an issue in handling the request, please try again")
+    except sr.UnknownValueError:
+      print("Unable to Recognize speech")
+
+
 
   # listens to the audio and returns the speech api output 
   def interpreter(self, recognizer, microphone):
+    print(current_thread())
     # maybe move to testing 
     if not isinstance(recognizer, sr.Recognizer):
       raise TypeError("recognizer must be Recognizer instance")
@@ -658,7 +649,7 @@ Other commands:
     with microphone as source:
       recognizer.adjust_for_ambient_noise(source)
       audio = recognizer.listen(source)
-    #stop_listening = recognizer.listen_in_background(microphone, callback)
+    #stop_listening = recognizer.listen_in_background(microphone, self.callback)
     try: 
       print(recognizer.recognize_google(audio))
       #self.parse(recognizer.recognize_google())
