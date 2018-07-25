@@ -8,8 +8,8 @@ import time
 import ScreenCapture
 import random 
 import os
-from threading import Thread, current_thread
-
+import multiprocessing as mp 
+import threading
 #
 # VoiceRecognition
 #
@@ -33,6 +33,37 @@ This module allows you to manipulate the slices and the 3D viewer using voice co
 Developed with the aid of Dr. Junichi Tokuda 
 """ # replace with organization, grant and thanks.
 
+
+
+# def unwrap_self(arg): 
+#   print("unpacking")
+#   return VoiceRecognitionWidget.startLogic(arg)
+
+# r = sr.Recognizer()
+# m = sr.Microphone()
+
+# def startLogic():
+#   print("testing")
+
+
+#   with m as source:
+#     while True: 
+#       print("listening")
+#       r.adjust_for_ambient_noise(source)
+#       audio = r.listen(source)
+
+
+#     # #stop_listening = recognizer.listen_in_background(microphone, self.callback)
+#       try: 
+#         print(r.recognize_google(audio))
+#       #self.parse(recognizer.recognize_google())
+#         #return recognizer.recognize_google(audio)
+#     # handles any api/voice errors  errors 
+#       except sr.RequestError: 
+#         print("There was an issue in handling the request, please try again")
+#       except sr.UnknownValueError:
+#         print("Unable to Recognize speech")
+
 #
 # VoiceRecognitionWidget
 #
@@ -44,7 +75,9 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
-    
+
+    #self.backgroundThread = threading.Thread(target = self.startLogic)
+    self.stop_listening = True
     #Initializes recognizer and microphone 
     self.recognizer = sr.Recognizer()
     try: 
@@ -189,25 +222,57 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.logic.parse("repeat")
 
   def onStopButton(self): 
-    self.logic.stop = True 
+    self.stop_listening = True 
 
   
   def onApplyButton(self):
     #self.displayLabel.setText("Listening for speech....")
-    slicer.util.delayDisplay("Wait...", 2250)
+    #slicer.util.delayDisplay("Wait...", 2250)
 
     # TODO: Background listening stuff --> not working will try once I get a response 
-    self.startLogic()
+    #self.startLogic()
+    print("begin listening")
+    self.backgroundProcess = mp.Process(target = startLogic)
+    #self.backgroundThread = threading.Thread(target = self.startLogic)
 
 
+    self.stop_listening = False
+    self.backgroundProcess.start()
+    self.backgroundProcess.join()
+    #self.backgroundThread.start()
+    #self.startLogic()
+
+  # TODO: BACKGROUND PROCESS FOR LISTENING 
   def startLogic(self):
     text = self.logic.interpreter(self.recognizer, self.microphone)
     # listens in the background 
-    #self.logic.interpreter(self.recognizer, self.microphone) 
-
 
     self.textBox.setText(text)
     self.logic.parse(text)
+    # print("testing")
+
+
+    # with self.microphone as source:
+    #   while True: 
+    #     print("listening")
+    #     self.recognizer.adjust_for_ambient_noise(source)
+    #     audio = self.recognizer.listen(source)
+
+
+    # # #stop_listening = recognizer.listen_in_background(microphone, self.callback)
+    #     try: 
+    #       print(self.recognizer.recognize_google(audio))
+    #   #self.parse(recognizer.recognize_google())
+    #     #return recognizer.recognize_google(audio)
+    # # handles any api/voice errors  errors 
+    #     except sr.RequestError: 
+    #       print("There was an issue in handling the request, please try again")
+    #     except sr.UnknownValueError:
+    #       print("Unable to Recognize speech")
+
+    #return 
+
+
 
 #
 # VoiceRecognitionLogic
