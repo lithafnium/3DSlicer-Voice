@@ -10,6 +10,7 @@ import random
 import os
 import multiprocessing as mp 
 import threading
+import pickle
 #
 # VoiceRecognition
 #
@@ -35,34 +36,24 @@ Developed with the aid of Dr. Junichi Tokuda
 
 
 
-# def unwrap_self(arg): 
-#   print("unpacking")
-#   return VoiceRecognitionWidget.startLogic(arg)
+# class Worker(qt.QRunnable): 
 
-# r = sr.Recognizer()
-# m = sr.Microphone()
+#   def run(self): 
+#     print("listening")
 
-# def startLogic():
-#   print("testing")
+    # with m as source:
+    #   while True: 
+    #     print("listening")
+    #     r.adjust_for_ambient_noise(source)
+    #     audio = r.listen(source)
+    #     try: 
+    #       print(r.recognize_google(audio))
+    #     # handles any api/voice errors  errors 
+    #     except sr.RequestError: 
+    #       print("There was an issue in handling the request, please try again")
+    #     except sr.UnknownValueError:
+    #       print("Unable to Recognize speech")
 
-
-#   with m as source:
-#     while True: 
-#       print("listening")
-#       r.adjust_for_ambient_noise(source)
-#       audio = r.listen(source)
-
-
-#     # #stop_listening = recognizer.listen_in_background(microphone, self.callback)
-#       try: 
-#         print(r.recognize_google(audio))
-#       #self.parse(recognizer.recognize_google())
-#         #return recognizer.recognize_google(audio)
-#     # handles any api/voice errors  errors 
-#       except sr.RequestError: 
-#         print("There was an issue in handling the request, please try again")
-#       except sr.UnknownValueError:
-#         print("Unable to Recognize speech")
 
 #
 # VoiceRecognitionWidget
@@ -75,9 +66,9 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
-
-    #self.backgroundThread = threading.Thread(target = self.startLogic)
-    self.stop_listening = True
+    
+    
+    #self.threadpool = qt.QThreadPool()
     #Initializes recognizer and microphone 
     self.recognizer = sr.Recognizer()
     try: 
@@ -136,16 +127,10 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     # Apply Button
     #
-    self.applyButton = qt.QPushButton("Begin Listneing")
-    self.applyButton.toolTip = "Listens for voice."
-    self.applyButton.enabled = True
-    parametersFormLayout.addRow(self.applyButton)
-
-
-    self.repeatButton = qt.QPushButton("Repeat last command")
-    self.repeatButton.toolTip = "Listens for voice."
-    self.repeatButton.enabled = True
-    parametersFormLayout.addRow(self.repeatButton)
+    self.listenButton = qt.QPushButton("Begin Listneing")
+    self.listenButton.toolTip = "Listens for voice."
+    self.listenButton.enabled = True
+    parametersFormLayout.addRow(self.listenButton)
 
     #
     # Stop Button
@@ -154,6 +139,14 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.stopButton.toolTip = "Stops listening."
     self.stopButton.enabled = True
     parametersFormLayout.addRow(self.stopButton)
+
+    #
+    # Repeat button 
+    #
+    self.repeatButton = qt.QPushButton("Repeat last command")
+    self.repeatButton.toolTip = "Listens for voice."
+    self.repeatButton.enabled = True
+    parametersFormLayout.addRow(self.repeatButton)
 
     # speech to text label 
     self.textBox = qt.QLabel(" ")
@@ -168,7 +161,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     parametersFormLayout.addRow("Errors: ", self.errors)
 
     # connections
-    self.applyButton.connect('clicked(bool)', self.onApplyButton)
+    self.listenButton.connect('clicked(bool)', self.onListenButton)
     self.stopButton.connect('clicked(bool)', self.onStopButton)
     self.repeatButton.connect('clicked(bool)', self.onRepeatButton)
     self.microphoneSelector.currentIndexChanged.connect(self.microphone_changed)
@@ -225,52 +218,33 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.stop_listening = True 
 
   
-  def onApplyButton(self):
-    #self.displayLabel.setText("Listening for speech....")
-    #slicer.util.delayDisplay("Wait...", 2250)
+  def onListenButton(self):
+    slicer.util.delayDisplay("Wait...", 2450)
+    # worker = Worker() 
+    # self.threadpool.start(worker)
+    self.startLogic()
 
     # TODO: Background listening stuff --> not working will try once I get a response 
-    #self.startLogic()
-    print("begin listening")
-    self.backgroundProcess = mp.Process(target = startLogic)
-    #self.backgroundThread = threading.Thread(target = self.startLogic)
+    
+    # #self.backgroundThread = threading.Thread(target = self.startLogic)
+    #self.backgroundProcess = mp.Process(target = startLogic)
+    #print("starting process...")
+    # self.stop_listening = False
+    #self.backgroundProcess.start()
+    #self.backgroundProcess.join()
 
-
-    self.stop_listening = False
-    self.backgroundProcess.start()
-    self.backgroundProcess.join()
-    #self.backgroundThread.start()
-    #self.startLogic()
+    
+    # self.backgroundThread.start()
 
   # TODO: BACKGROUND PROCESS FOR LISTENING 
   def startLogic(self):
+    #qt.QApplication.processEvents()
     text = self.logic.interpreter(self.recognizer, self.microphone)
-    # listens in the background 
 
     self.textBox.setText(text)
     self.logic.parse(text)
     # print("testing")
 
-
-    # with self.microphone as source:
-    #   while True: 
-    #     print("listening")
-    #     self.recognizer.adjust_for_ambient_noise(source)
-    #     audio = self.recognizer.listen(source)
-
-
-    # # #stop_listening = recognizer.listen_in_background(microphone, self.callback)
-    #     try: 
-    #       print(self.recognizer.recognize_google(audio))
-    #   #self.parse(recognizer.recognize_google())
-    #     #return recognizer.recognize_google(audio)
-    # # handles any api/voice errors  errors 
-    #     except sr.RequestError: 
-    #       print("There was an issue in handling the request, please try again")
-    #     except sr.UnknownValueError:
-    #       print("Unable to Recognize speech")
-
-    #return 
 
 
 
