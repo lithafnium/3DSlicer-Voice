@@ -1,3 +1,13 @@
+import pip 
+pip_modules = ['SpeechRecognition', 'setuptools', 'wheel', 'pocketsphinx', 'pyaudio']
+for module_ in pip_modules: 
+  try: 
+    module_obj = __import__(module_)
+
+  except ImportError: 
+    logging.info("{0} was not found. \n Attempting to install {0}...".format(module_))
+    pip.main(['install', module_])
+
 import os
 import unittest
 import vtk, qt, ctk, slicer
