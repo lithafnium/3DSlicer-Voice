@@ -1,4 +1,20 @@
+
+
+import os
+import unittest
+import vtk, qt, ctk, slicer
+from slicer.ScriptedLoadableModule import *
+import logging
+import time 
+import ScreenCapture
+import random 
+import os
+import multiprocessing as mp 
+import threading
+import pickle
+import PythonQt.QtCore
 import pip 
+
 pip_modules = ['SpeechRecognition', 'setuptools', 'wheel', 'pocketsphinx', 'pyaudio']
 for module_ in pip_modules: 
   try: 
@@ -8,19 +24,8 @@ for module_ in pip_modules:
     logging.info("{0} was not found. \n Attempting to install {0}...".format(module_))
     pip.main(['install', module_])
 
-import os
-import unittest
-import vtk, qt, ctk, slicer
-from slicer.ScriptedLoadableModule import *
-import logging
 import speech_recognition as sr
-import time 
-import ScreenCapture
-import random 
-import os
-import multiprocessing as mp 
-import threading
-import pickle
+
 #
 # VoiceRecognition
 #
@@ -45,6 +50,16 @@ Developed with the aid of Dr. Junichi Tokuda
 """ # replace with organization, grant and thanks.
 
 
+# class Worker(PythonQt.QtCore.QThread):
+#   def __init__(self): 
+#     qt.Qthread.__init__(self)
+
+
+#   def __del__(self): 
+#     self.wait()
+
+#   def run(self): 
+    
 
 # class Worker(qt.QRunnable): 
 
@@ -76,7 +91,6 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
-    
     
     #self.threadpool = qt.QThreadPool()
     #Initializes recognizer and microphone 
@@ -230,32 +244,27 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   
   def onListenButton(self):
     slicer.util.delayDisplay("Wait...", 2450)
-    # worker = Worker() 
+    #self.worker = Worker() 
+    #self.worker.start() #Q Thread method
     # self.threadpool.start(worker)
     self.startLogic()
 
     # TODO: Background listening stuff --> not working will try once I get a response 
     
-    # #self.backgroundThread = threading.Thread(target = self.startLogic)
+    #self.backgroundThread = threading.Thread(target = self.startLogic)
     #self.backgroundProcess = mp.Process(target = startLogic)
     #print("starting process...")
     # self.stop_listening = False
     #self.backgroundProcess.start()
     #self.backgroundProcess.join()
-
-    
     # self.backgroundThread.start()
 
   # TODO: BACKGROUND PROCESS FOR LISTENING 
   def startLogic(self):
-    #qt.QApplication.processEvents()
     text = self.logic.interpreter(self.recognizer, self.microphone)
 
     self.textBox.setText(text)
     self.logic.parse(text)
-    # print("testing")
-
-
 
 
 #
@@ -430,9 +439,6 @@ Other commands:
   def setLayout(self, lm, layoutNumber):
     lm.setLayout(layoutNumber)
 
-
-# ============================== TRYING OUT DICTIONARY METHOD =============================
-
   def zoomHelper(self): 
     for word in self.words:
       if(self.representsFloat(word)):
@@ -452,7 +458,7 @@ Other commands:
     self.threeDView.zoomOut()
     self.previous_command = self.zoomOut
 
-
+  # =================== INDIVIDUAL SLICE VIEWS ===================
   def redView(self): 
     self.layoutManager.setLayout(6)
 
@@ -461,6 +467,8 @@ Other commands:
 
   def greenView(self): 
     self.layoutManager.setLayout(8)
+
+  # =================== TOGGLE SLICES IN 3D VIEWER ===================
 
   def showRed(self): 
     self.redNode.SetSliceVisible(1)
@@ -479,6 +487,8 @@ Other commands:
 
   def hideGreen(self): 
     self.greenNode.SetSliceVisible(0)
+
+  # =================== LINK/UNLINK SLICES ===================
 
   def linkRed(self): 
     self.redCompositeNode.LinkedControlOn()
@@ -521,6 +531,8 @@ Other commands:
 
   def posteriorAxis(self): 
     self.threeDView.lookFromAxis(6)
+
+  # =================== OFFSET SLICE ===================
 
   def manipulateSliceHelper(self, sliceController):
     for word in self.words: 
