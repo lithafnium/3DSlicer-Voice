@@ -49,35 +49,34 @@ This module allows you to manipulate the slices and the 3D viewer using voice co
 Developed with the aid of Dr. Junichi Tokuda 
 """ # replace with organization, grant and thanks.
 
-
-# class Worker(PythonQt.QtCore.QThread):
-#   def __init__(self): 
-#     qt.Qthread.__init__(self)
-
-
-#   def __del__(self): 
-#     self.wait()
-
-#   def run(self): 
     
 
-# class Worker(qt.QRunnable): 
+class Worker(qt.QRunnable): 
+    
+  def widget(self, m, r): 
+    self.m = m
+    self.r = r
 
-#   def run(self): 
-#     print("listening")
+  def stop(self): 
+    print("stop")
 
-    # with m as source:
-    #   while True: 
-    #     print("listening")
-    #     r.adjust_for_ambient_noise(source)
-    #     audio = r.listen(source)
-    #     try: 
-    #       print(r.recognize_google(audio))
-    #     # handles any api/voice errors  errors 
-    #     except sr.RequestError: 
-    #       print("There was an issue in handling the request, please try again")
-    #     except sr.UnknownValueError:
-    #       print("Unable to Recognize speech")
+
+  def run(self): 
+    # print("starting thread")
+    # time.sleep(5)
+    # print("ending thread")
+    with self.m as source:
+      while True: 
+        print("listening")
+        self.r.adjust_for_ambient_noise(source)
+        audio = self.r.listen(source)
+        try: 
+          print(self.r.recognize_google(audio))
+        # handles any api/voice errors  errors 
+        except sr.RequestError: 
+          print("There was an issue in handling the request, please try again")
+        except sr.UnknownValueError:
+          print("Unable to Recognize speech")
 
 
 #
@@ -92,7 +91,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
   def setup(self):
     ScriptedLoadableModuleWidget.setup(self)
     
-    #self.threadpool = qt.QThreadPool()
+    #self.threadpool = qt.QThreadPool.globalInstance()
     #Initializes recognizer and microphone 
     self.recognizer = sr.Recognizer()
     try: 
@@ -159,7 +158,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     # Stop Button
     #
-    self.stopButton = qt.QPushButton("Stop Listneing")
+    self.stopButton = qt.QPushButton("Stop Listensing")
     self.stopButton.toolTip = "Stops listening."
     self.stopButton.enabled = True
     parametersFormLayout.addRow(self.stopButton)
@@ -239,14 +238,16 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.logic.parse("repeat")
 
   def onStopButton(self): 
-    self.stop_listening = True 
+    #self.stop_listening = True 
+    print(10)
 
   
   def onListenButton(self):
     slicer.util.delayDisplay("Wait...", 2450)
     #self.worker = Worker() 
+    #self.worker.widget(self.microphone, self.recognizer)
     #self.worker.start() #Q Thread method
-    # self.threadpool.start(worker)
+    #qt.QThreadPool.globalInstance().start(self.worker)
     self.startLogic()
 
     # TODO: Background listening stuff --> not working will try once I get a response 
@@ -392,9 +393,9 @@ Other commands:
     self.previous_command = self.conventional
 
     # dictionary for functions that manipulate the red/yellow/green slices 
-    self.colorSwitcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView, "link" : self.linkRed, "unlink" : self.unlinkRed, "offset" : self.manipulateRed} ,
-                     "yellow" : {"show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView, "link" : self.linkYellow, "unlink" : self.unlinkYellow, "offset" : self.manipulateYellow},
-                     "green" : {"show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView, "link" : self.linkGreen, "unlink" : self.unlinkGreen, "offset" : self.manipulateGreen }
+    self.colorSwitcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView,  "unlink" : self.unlinkRed, "link" : self.linkRed, "offset" : self.manipulateRed} ,
+                     "yellow" : {"show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView,  "unlink" : self.unlinkYellow, "link" : self.linkYellow, "offset" : self.manipulateYellow},
+                     "green" : {"show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView,  "unlink" : self.unlinkGreen, "link" : self.linkGreen,"offset" : self.manipulateGreen }
     }
     # all other functions that don't have parameters
 
@@ -668,6 +669,7 @@ Other commands:
       #print(key)
       if(key in self.textLower): 
         #print("key is in text")
+        print(key)
         self.previous_command = functions.get(key)
         functions.get(key)()
         VoiceRecognitionLogic.parameters = []
