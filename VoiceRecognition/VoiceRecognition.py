@@ -161,7 +161,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     self.stopButton = qt.QPushButton("Stop Listensing")
     self.stopButton.toolTip = "Stops listening."
     self.stopButton.enabled = True
-    parametersFormLayout.addRow(self.stopButton)
+    #parametersFormLayout.addRow(self.stopButton)
 
     #
     # Repeat button 
