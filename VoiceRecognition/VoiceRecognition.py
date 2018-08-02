@@ -243,7 +243,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   
   def onListenButton(self):
-    slicer.util.delayDisplay("Wait...", 2450)
+    #slicer.util.delayDisplay("Wait...", 2450)
     #self.worker = Worker() 
     #self.worker.widget(self.microphone, self.recognizer)
     #self.worker.start() #Q Thread method
@@ -262,10 +262,12 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   # TODO: BACKGROUND PROCESS FOR LISTENING 
   def startLogic(self):
+    self.startTime = time.clock()
     text = self.logic.interpreter(self.recognizer, self.microphone)
 
     self.textBox.setText(text)
     self.logic.parse(text)
+    print("Time: ", time.clock() - self.startTime)
 
 
 #
@@ -356,7 +358,7 @@ Other commands:
   # Parameters array is used to store function parameters when user asks to repaet a function 
   parameters = []
   pitch_terms = ["pitch", "catch", "touch", "patch"]
-  yaw_terms = ["yaw", "yeah"]
+  yaw_terms = ["yaw", "yeah", "y'all"]
   
 
   # constructor, initializes everything
@@ -393,9 +395,10 @@ Other commands:
     self.previous_command = self.conventional
 
     # dictionary for functions that manipulate the red/yellow/green slices 
-    self.colorSwitcher = {"red" : {"show" : self.showRed, "hide" : self.hideRed , "view" : self.redView,  "unlink" : self.unlinkRed, "link" : self.linkRed, "offset" : self.manipulateRed} ,
-                     "yellow" : {"show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView,  "unlink" : self.unlinkYellow, "link" : self.linkYellow, "offset" : self.manipulateYellow},
-                     "green" : {"show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView,  "unlink" : self.unlinkGreen, "link" : self.linkGreen,"offset" : self.manipulateGreen }
+    self.colorSwitcher = {"red" : {"john" : self.showRed, "show" : self.showRed, "hide" : self.hideRed , "view" : self.redView,  "unlink" : self.unlinkRed, "link" : self.linkRed, "offset" : self.manipulateRed} ,
+                          "read" : {"john" : self.showRed, "show" : self.showRed, "hide" : self.hideRed , "view" : self.redView,  "unlink" : self.unlinkRed, "link" : self.linkRed, "offset" : self.manipulateRed}, 
+                     "yellow" : {"john" : self.showYellow, "show" : self.showYellow, "hide" : self.hideYellow, "view" : self.yellowView,  "unlink" : self.unlinkYellow, "link" : self.linkYellow, "offset" : self.manipulateYellow},
+                     "green" : {"john" : self.showGreen, "hyde" : self.hideGreen, "show" : self.showGreen, "hide" : self.hideGreen, "view" : self.greenView,  "unlink" : self.unlinkGreen, "link" : self.linkGreen,"offset" : self.manipulateGreen }
     }
     # all other functions that don't have parameters
 
@@ -517,21 +520,34 @@ Other commands:
 
   def rightAxis(self): 
     self.threeDView.lookFromAxis(1)
+    self.threeDView.setZoomFactor(0.2)
+
+    self.threeDView.zoomOut()
 
   def leftAxis(self): 
     self.threeDView.lookFromAxis(2)
+    self.threeDView.setZoomFactor(0.2)
+    self.threeDView.zoomOut()
 
   def superiorAxis(self): 
     self.threeDView.lookFromAxis(3)
+    self.threeDView.setZoomFactor(0.2)
+    self.threeDView.zoomOut()
 
   def inferiorAxis(self): 
     self.threeDView.lookFromAxis(4)
+    self.threeDView.setZoomFactor(0.2)
+    self.threeDView.zoomOut()
 
   def anteriorAxis(self): 
     self.threeDView.lookFromAxis(5)
+    self.threeDView.setZoomFactor(0.2)
+    self.threeDView.zoomOut()
 
   def posteriorAxis(self): 
     self.threeDView.lookFromAxis(6)
+    self.threeDView.setZoomFactor(0.2)
+    self.threeDView.zoomOut()
 
   # =================== OFFSET SLICE ===================
 
@@ -540,6 +556,9 @@ Other commands:
       if(self.representsFloat(word)):
         self.offset = float(word)
         break
+
+    if("negative" in self.words || "minus" in self.words): 
+      self.offset *= -1 
 
     sliceController.setSliceOffsetValue(self.offset)
 
@@ -669,7 +688,8 @@ Other commands:
       #print(key)
       if(key in self.textLower): 
         #print("key is in text")
-        print(key)
+
+        #print(key)
         self.previous_command = functions.get(key)
         functions.get(key)()
         VoiceRecognitionLogic.parameters = []
@@ -686,7 +706,7 @@ Other commands:
 
 
         if(key != "repeat"): 
-          print("NOT REPEAT")
+          #print("NOT REPEAT")
           self.previous_command = self.functionSwitcher.get(key)
           print(self.previous_command) 
 
