@@ -557,7 +557,7 @@ Other commands:
         self.offset = float(word)
         break
 
-    if("negative" in self.words || "minus" in self.words): 
+    if("negative" in self.words or "minus" in self.words): 
       self.offset *= -1 
 
     sliceController.setSliceOffsetValue(self.offset)
