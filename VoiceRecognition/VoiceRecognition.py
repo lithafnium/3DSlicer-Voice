@@ -150,7 +150,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     # Apply Button
     #
-    self.listenButton = qt.QPushButton("Begin Listneing")
+    self.listenButton = qt.QPushButton("Begin Listening")
     self.listenButton.toolTip = "Listens for voice."
     self.listenButton.enabled = True
     parametersFormLayout.addRow(self.listenButton)
@@ -158,7 +158,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     # Stop Button
     #
-    self.stopButton = qt.QPushButton("Stop Listensing")
+    self.stopButton = qt.QPushButton("Stop Listensing") 
     self.stopButton.toolTip = "Stops listening."
     self.stopButton.enabled = True
     #parametersFormLayout.addRow(self.stopButton)
@@ -166,7 +166,7 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
     #
     # Repeat button 
     #
-    self.repeatButton = qt.QPushButton("Repeat last command")
+    self.repeatButton = qt.QPushButton("Repeat Last Command")
     self.repeatButton.toolTip = "Listens for voice."
     self.repeatButton.enabled = True
     parametersFormLayout.addRow(self.repeatButton)
@@ -411,6 +411,8 @@ Other commands:
     }
     self.sliceOffset = 10
     self.zoom_factor = 0.5
+
+
 
   def pitch(self, threeDView, increment):
     threeDView.setPitchRollYawIncrement(increment)
@@ -748,10 +750,11 @@ Other commands:
       recognizer.adjust_for_ambient_noise(source)
       audio = recognizer.listen(source)
 
-
+    self.time = time.clock()
     # #stop_listening = recognizer.listen_in_background(microphone, self.callback)
     try: 
       print(recognizer.recognize_google(audio))
+      print("Processing Time: ", time.clock() - self.time)
       #self.parse(recognizer.recognize_google())
       return recognizer.recognize_google(audio)
     # handles any api/voice errors  errors 
