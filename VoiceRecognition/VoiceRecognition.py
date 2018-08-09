@@ -51,32 +51,6 @@ Developed with the aid of Dr. Junichi Tokuda
 
     
 
-class Worker(qt.QRunnable): 
-    
-  def widget(self, m, r): 
-    self.m = m
-    self.r = r
-
-  def stop(self): 
-    print("stop")
-
-
-  def run(self): 
-    # print("starting thread")
-    # time.sleep(5)
-    # print("ending thread")
-    with self.m as source:
-      while True: 
-        print("listening")
-        self.r.adjust_for_ambient_noise(source)
-        audio = self.r.listen(source)
-        try: 
-          print(self.r.recognize_google(audio))
-        # handles any api/voice errors  errors 
-        except sr.RequestError: 
-          print("There was an issue in handling the request, please try again")
-        except sr.UnknownValueError:
-          print("Unable to Recognize speech")
 
 
 #
@@ -243,22 +217,10 @@ class VoiceRecognitionWidget(ScriptedLoadableModuleWidget):
 
   
   def onListenButton(self):
-    #slicer.util.delayDisplay("Wait...", 2450)
-    #self.worker = Worker() 
-    #self.worker.widget(self.microphone, self.recognizer)
-    #self.worker.start() #Q Thread method
-    #qt.QThreadPool.globalInstance().start(self.worker)
+    
     self.startLogic()
 
-    # TODO: Background listening stuff --> not working will try once I get a response 
     
-    #self.backgroundThread = threading.Thread(target = self.startLogic)
-    #self.backgroundProcess = mp.Process(target = startLogic)
-    #print("starting process...")
-    # self.stop_listening = False
-    #self.backgroundProcess.start()
-    #self.backgroundProcess.join()
-    # self.backgroundThread.start()
 
   # TODO: BACKGROUND PROCESS FOR LISTENING 
   def startLogic(self):
@@ -722,17 +684,6 @@ Other commands:
       self.traversePitchYawRoll(word, self.yaw)
 
     self.traversePitchYawRoll("roll", self.roll)
-
-  def callback(self, recognizer, audio):
-    print(current_thread())
-    try: 
-      print(recognizer.recognize_google(audio))
-    # handles any api/voice errors  errors 
-    except sr.RequestError: 
-      print( "There was an issue in handling the request, please try again")
-    except sr.UnknownValueError:
-      print("Unable to Recognize speech")
-
 
 
   # listens to the audio and returns the speech api output 
